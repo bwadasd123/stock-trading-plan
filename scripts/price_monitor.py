@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-科安达价格监控脚本 v2
-功能：定时汇报 + 涨跌播报 + 开盘收盘 + 止盈止损
-推送到企业微信群
+科安达价格监控脚本 v3
+功能：定时汇报 + 涨跌播报 + 开盘收盘 + 止盈止损 + 盘口分析
 """
 
 import urllib.request
@@ -17,17 +16,19 @@ STOCK_CODE = "0.002972"
 STOCK_NAME = "科安达"
 AVG_COST = 16.443
 SHARES = 400
+CIRCULATING_SHARES = 134646315  # 流通股本(f85)
 
 # 触发条件
-TAKE_PROFIT = 18.91    # +15%
-STOP_LOSS = 15.13      # -8%
-WARN_HIGH = 18.00
-WARN_LOW = 16.00
-CHANGE_THRESHOLD = 1.0 # 涨跌幅超过2%推送
+TAKE_PROFIT = 18.00    # 止盈价（调整为+9.5%）
+STOP_LOSS = 15.13      # 止损价（-8%）
+WARN_HIGH = 17.50      # 接近止盈提醒
+WARN_LOW = 16.00       # 接近止损提醒
+CHANGE_THRESHOLD = 1.0 # 涨跌幅超过1%推送
 
-STATE_FILE = ".monitor_state.json"
+STATE_FILE = "/home/jmy/.hermes/profiles/eastmoney-bot/scripts/.monitor_state.json"
 
 def send_wx(content):
+    """推送企业微信群"""
     data = json.dumps({"msgtype": "text", "text": {"content": content}}).encode()
     req = urllib.request.Request(WX_WEBHOOK, data=data, headers={"Content-Type": "application/json"})
     try:
@@ -36,20 +37,51 @@ def send_wx(content):
         print(f"推送失败: {e}")
 
 def get_price():
-    url = f"http://push2delay.eastmoney.com/api/qt/stock/get?secid={STOCK_CODE}&fields=f43,f170,f44,f45,f46,f60"
+    """获取实时行情数据"""
+    url = f"http://push2delay.eastmoney.com/api/qt/stock/get?secid={STOCK_CODE}&fields=f43,f44,f45,f46,f47,f48,f49,f50,f60,f161,f170,f85"
     try:
         req = urllib.request.Request(url)
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read())["data"]
+            
+            # 正确解析字段
+            price = data["f43"] / 100
+            high = data["f44"] / 100
+            low = data["f45"] / 100
+            open_p = data["f46"] / 100
+            yesterday = data["f60"] / 100
+            volume = data["f47"]           # 成交量(手)
+            amount = data["f48"]           # 成交额(元)
+            outer = data["f49"]            # 外盘(手)
+            inner = data["f161"]           # 内盘(手)
+            change_pct = data["f170"] / 100  # 涨跌幅
+            circ_shares = data["f85"]      # 流通股本
+            
+            # 计算指标
+            amplitude = (high - low) / yesterday * 100  # 振幅
+            turnover = volume * 100 / circ_shares * 100 if circ_shares > 0 else 0  # 换手率
+            
+            # 内外盘比
+            total_vol = outer + inner
+            outer_ratio = outer / total_vol * 100 if total_vol > 0 else 50
+            
             return {
-                "price": data["f43"] / 100,
-                "change_pct": data["f170"] / 100,
-                "high": data["f44"] / 100,
-                "low": data["f45"] / 100,
-                "open": data["f46"] / 100,
-                "yesterday": data["f60"] / 100
+                "price": price,
+                "high": high,
+                "low": low,
+                "open": open_p,
+                "yesterday": yesterday,
+                "change_pct": change_pct,
+                "volume": volume,
+                "amount": amount,
+                "outer": outer,
+                "inner": inner,
+                "outer_ratio": outer_ratio,
+                "amplitude": amplitude,
+                "turnover": turnover,
             }
-    except:
+    except Exception as e:
+        print(f"获取数据失败: {e}")
         return None
 
 def load_state():
@@ -78,17 +110,39 @@ def is_trading_time():
            (datetime.time(12, 55) <= t <= datetime.time(15, 1))
 
 def format_status(price_data, tag=""):
+    """格式化状态信息（含盘口分析）"""
     price = price_data["price"]
     profit_pct = (price - AVG_COST) / AVG_COST * 100
     profit_amount = (price - AVG_COST) * SHARES
     total_value = price * SHARES
     
     emoji = "📈" if profit_pct >= 0 else "📉"
+    change_emoji = "🔺" if price_data["change_pct"] >= 0 else "🔻"
     
-    msg = f"{tag}{emoji} {STOCK_NAME} {price} ({'+' if profit_pct>=0 else ''}{profit_pct:.1f}%)\n"
-    msg += f"持仓: {SHARES}股 | 盈亏: {'+' if profit_amount>=0 else ''}{profit_amount:.0f}元\n"
-    msg += f"市值: {total_value:.0f}元 | 今日: {'+' if price_data['change_pct']>=0 else ''}{price_data['change_pct']:.1f}%\n"
-    msg += f"止盈: {TAKE_PROFIT} | 止损: {STOP_LOSS}"
+    msg = f"{tag}{emoji} {STOCK_NAME} {price:.2f} ({'+' if profit_pct>=0 else ''}{profit_pct:.1f}%)\n"
+    msg += f"━━━━━━━━━━━━━━━━\n"
+    msg += f"💰 持仓：{SHARES}股 | 市值：{total_value:.0f}元\n"
+    msg += f"📊 盈亏：{'+' if profit_amount>=0 else ''}{profit_amount:.0f}元\n"
+    msg += f"━━━━━━━━━━━━━━━━\n"
+    msg += f"{change_emoji} 今日：{'+' if price_data['change_pct']>=0 else ''}{price_data['change_pct']:.2f}%\n"
+    msg += f"📏 振幅：{price_data['amplitude']:.2f}%\n"
+    msg += f"🔄 换手：{price_data['turnover']:.2f}%\n"
+    msg += f"━━━━━━━━━━━━━━━━\n"
+    msg += f"🟢 外盘：{price_data['outer']}手 ({price_data['outer_ratio']:.0f}%)\n"
+    msg += f"🔴 内盘：{price_data['inner']}手 ({100-price_data['outer_ratio']:.0f}%)\n"
+    
+    # 盘口判断
+    if price_data['outer_ratio'] > 60:
+        msg += f"📊 判断：买方强势\n"
+    elif price_data['outer_ratio'] < 40:
+        msg += f"📊 判断：卖方强势\n"
+    else:
+        msg += f"📊 判断：买卖均衡\n"
+    
+    msg += f"━━━━━━━━━━━━━━━━\n"
+    msg += f"🎯 止盈：{TAKE_PROFIT} (+{(TAKE_PROFIT-AVG_COST)/AVG_COST*100:.0f}%)\n"
+    msg += f"🚨 止损：{STOP_LOSS} ({(STOP_LOSS-AVG_COST)/AVG_COST*100:.0f}%)"
+    
     return msg
 
 def main():
@@ -96,7 +150,7 @@ def main():
     state = load_state()
     
     if not is_trading_time():
-        # 15:00收盘推送（每天只推一次）
+        # 15:00收盘推送
         if now.hour == 15 and now.minute == 0 and not state.get("close_sent"):
             price_data = get_price()
             if price_data:
@@ -129,7 +183,7 @@ def main():
         save_state(state)
         return
     
-    # 每小时定时汇报（整点推送）
+    # 每小时定时汇报
     current_hour = now.strftime("%H:00")
     if current_hour != state.get("last_hourly") and now.minute == 0:
         msg = f"⏰ 【整点播报】\n" + format_status(price_data)
@@ -138,14 +192,14 @@ def main():
         save_state(state)
         return
     
-    # 涨跌超过2%推送
+    # 涨跌超过阈值推送
     last_price = state.get("last_price")
     if last_price:
         change_from_last = (price - last_price) / last_price * 100
         if abs(change_from_last) >= CHANGE_THRESHOLD and f"change_{int(change_from_last)}" not in state["alerted_types"]:
             direction = "拉升" if change_from_last > 0 else "跳水"
             msg = f"⚡ 【{direction}提醒】\n"
-            msg += f"{STOCK_NAME} {last_price} → {price} ({'+' if change_from_last>0 else ''}{change_from_last:.1f}%)\n"
+            msg += f"{STOCK_NAME} {last_price:.2f} → {price:.2f} ({'+' if change_from_last>0 else ''}{change_from_last:.1f}%)\n"
             msg += format_status(price_data)
             send_wx(msg)
             state["alerted_types"].append(f"change_{int(change_from_last)}")
@@ -155,28 +209,37 @@ def main():
     
     # 止盈止损触发
     if price >= TAKE_PROFIT and "take_profit" not in state["alerted_types"]:
-        msg = f"🎯 【止盈触发！】\n{STOCK_NAME} 现价{price} (+{profit_pct:.1f}%)\n建议卖出200股，回收{200*price:.0f}元\n剩余200股继续持有"
+        msg = f"🎯 【止盈触发！】\n"
+        msg += f"{STOCK_NAME} 现价{price:.2f} (+{profit_pct:.1f}%)\n"
+        msg += f"建议卖出{SHARES//2}股，回收{SHARES//2*price:.0f}元\n"
+        msg += f"剩余{SHARES//2}股继续持有"
         send_wx(msg)
         state["alerted_types"].append("take_profit")
         save_state(state)
         return
     
     if price <= STOP_LOSS and "stop_loss" not in state["alerted_types"]:
-        msg = f"🚨 【止损触发！】\n{STOCK_NAME} 现价{price} ({profit_pct:.1f}%)\n建议清仓400股，亏损{(price-AVG_COST)*SHARES:.0f}元"
+        msg = f"🚨 【止损触发！】\n"
+        msg += f"{STOCK_NAME} 现价{price:.2f} ({profit_pct:.1f}%)\n"
+        msg += f"建议清仓{SHARES}股，亏损{(price-AVG_COST)*SHARES:.0f}元"
         send_wx(msg)
         state["alerted_types"].append("stop_loss")
         save_state(state)
         return
     
     if price >= WARN_HIGH and "warn_high" not in state["alerted_types"]:
-        msg = f"📈 【接近止盈】\n{STOCK_NAME} 现价{price} (+{profit_pct:.1f}%)\n距止盈18.91还差{(TAKE_PROFIT-price)/price*100:.1f}%"
+        msg = f"📈 【接近止盈】\n"
+        msg += f"{STOCK_NAME} 现价{price:.2f} (+{profit_pct:.1f}%)\n"
+        msg += f"距止盈{TAKE_PROFIT}还差{(TAKE_PROFIT-price)/price*100:.1f}%"
         send_wx(msg)
         state["alerted_types"].append("warn_high")
         save_state(state)
         return
     
     if price <= WARN_LOW and "warn_low" not in state["alerted_types"]:
-        msg = f"📉 【接近止损】\n{STOCK_NAME} 现价{price} ({profit_pct:.1f}%)\n距止损15.13还差{(price-STOP_LOSS)/price*100:.1f}%"
+        msg = f"📉 【接近止损】\n"
+        msg += f"{STOCK_NAME} 现价{price:.2f} ({profit_pct:.1f}%)\n"
+        msg += f"距止损{STOP_LOSS}还差{(price-STOP_LOSS)/price*100:.1f}%"
         send_wx(msg)
         state["alerted_types"].append("warn_low")
         save_state(state)
