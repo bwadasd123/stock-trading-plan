@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-科安达价格监控脚本 v3
-功能：定时汇报 + 涨跌播报 + 开盘收盘 + 止盈止损 + 盘口分析
+科安达价格监控脚本 v4
+功能：定时汇报 + 涨跌播报 + 开盘收盘 + 止盈止损 + 盘口分析 + 挂单提醒
 """
 
 import urllib.request
@@ -19,11 +19,18 @@ SHARES = 400
 CIRCULATING_SHARES = 134646315  # 流通股本(f85)
 
 # 触发条件
-TAKE_PROFIT = 18.00    # 止盈价（调整为+9.5%）
+TAKE_PROFIT = 18.00    # 止盈价（+9.5%）
 STOP_LOSS = 15.13      # 止损价（-8%）
 WARN_HIGH = 17.50      # 接近止盈提醒
 WARN_LOW = 16.00       # 接近止损提醒
 CHANGE_THRESHOLD = 1.0 # 涨跌幅超过1%推送
+
+# 挂单价格（可调整）
+LIMIT_SELL_1 = 18.00   # 第一档止盈卖出
+LIMIT_SELL_2 = 18.50   # 第二档止盈卖出
+LIMIT_SELL_3 = 18.91   # 第三档止盈卖出（原目标价）
+LIMIT_BUY_1 = 17.00    # 第一档回调买入
+LIMIT_BUY_2 = 16.50    # 第二档回调买入（接近成本）
 
 STATE_FILE = "/home/jmy/.hermes/profiles/eastmoney-bot/scripts/.monitor_state.json"
 
@@ -94,7 +101,8 @@ def load_state():
             "last_hourly": None,
             "last_price": None,
             "open_sent": False,
-            "close_sent": False
+            "close_sent": False,
+            "order_reminder_sent": False,
         }
 
 def save_state(state):
@@ -109,8 +117,37 @@ def is_trading_time():
     return (datetime.time(9, 25) <= t <= datetime.time(11, 31)) or \
            (datetime.time(12, 55) <= t <= datetime.time(15, 1))
 
+def get_order_suggestions(price):
+    """根据当前价格生成挂单建议"""
+    profit_pct = (price - AVG_COST) / AVG_COST * 100
+    suggestions = []
+    
+    # 止盈挂单建议
+    if price < LIMIT_SELL_1:
+        distance = (LIMIT_SELL_1 - price) / price * 100
+        suggestions.append(f"📌 卖出挂单：{LIMIT_SELL_1}元（距{distance:.1f}%）")
+        suggestions.append(f"   └ 卖出{SHARES//2}股，回收{SHARES//2*LIMIT_SELL_1:.0f}元")
+    
+    if price < LIMIT_SELL_2:
+        suggestions.append(f"📌 卖出挂单：{LIMIT_SELL_2}元")
+    
+    if price < LIMIT_SELL_3:
+        suggestions.append(f"📌 卖出挂单：{LIMIT_SELL_3}元（原目标价）")
+    
+    # 止损挂单建议
+    if price > STOP_LOSS:
+        distance = (price - STOP_LOSS) / price * 100
+        suggestions.append(f"📌 止损挂单：{STOP_LOSS}元（距{distance:.1f}%）")
+        suggestions.append(f"   └ 清仓{SHARES}股，亏损{(STOP_LOSS-AVG_COST)*SHARES:.0f}元")
+    
+    # 回调买入建议（如果仓位不满）
+    if price > LIMIT_BUY_1:
+        suggestions.append(f"📌 回调买入：{LIMIT_BUY_1}元（补仓机会）")
+    
+    return suggestions
+
 def format_status(price_data, tag=""):
-    """格式化状态信息（含盘口分析）"""
+    """格式化状态信息（含盘口分析+挂单建议）"""
     price = price_data["price"]
     profit_pct = (price - AVG_COST) / AVG_COST * 100
     profit_amount = (price - AVG_COST) * SHARES
@@ -133,15 +170,35 @@ def format_status(price_data, tag=""):
     
     # 盘口判断
     if price_data['outer_ratio'] > 60:
-        msg += f"📊 判断：买方强势\n"
+        msg += f"📊 判断：买方强势 ✅\n"
     elif price_data['outer_ratio'] < 40:
-        msg += f"📊 判断：卖方强势\n"
+        msg += f"📊 判断：卖方强势 ⚠️\n"
     else:
         msg += f"📊 判断：买卖均衡\n"
     
     msg += f"━━━━━━━━━━━━━━━━\n"
     msg += f"🎯 止盈：{TAKE_PROFIT} (+{(TAKE_PROFIT-AVG_COST)/AVG_COST*100:.0f}%)\n"
     msg += f"🚨 止损：{STOP_LOSS} ({(STOP_LOSS-AVG_COST)/AVG_COST*100:.0f}%)"
+    
+    return msg
+
+def format_order_reminder(price_data):
+    """格式化挂单提醒"""
+    price = price_data["price"]
+    profit_pct = (price - AVG_COST) / AVG_COST * 100
+    
+    msg = f"📋 【挂单提醒】\n"
+    msg += f"━━━━━━━━━━━━━━━━\n"
+    msg += f"当前价：{price:.2f} ({'+' if profit_pct>=0 else ''}{profit_pct:.1f}%)\n"
+    msg += f"━━━━━━━━━━━━━━━━\n"
+    
+    suggestions = get_order_suggestions(price)
+    for s in suggestions:
+        msg += f"{s}\n"
+    
+    msg += f"━━━━━━━━━━━━━━━━\n"
+    msg += f"💡 建议在券商APP设置条件单\n"
+    msg += f"   价格到自动执行，不用盯盘"
     
     return msg
 
@@ -155,6 +212,7 @@ def main():
             price_data = get_price()
             if price_data:
                 msg = f"📊 【收盘总结】\n" + format_status(price_data)
+                msg += f"\n\n{format_order_reminder(price_data)}"
                 send_wx(msg)
                 state["close_sent"] = True
                 save_state(state)
@@ -172,14 +230,24 @@ def main():
         state["alerted_types"] = []
         state["open_sent"] = False
         state["close_sent"] = False
+        state["order_reminder_sent"] = False
         state["last_price"] = price
     
-    # 9:30开盘推送
+    # 9:30开盘推送（含挂单提醒）
     if now.hour == 9 and now.minute == 30 and not state.get("open_sent"):
         msg = f"🔔 【开盘播报】\n" + format_status(price_data)
+        msg += f"\n\n{format_order_reminder(price_data)}"
         send_wx(msg)
         state["open_sent"] = True
         state["last_price"] = price
+        save_state(state)
+        return
+    
+    # 10:30 挂单提醒（每天一次）
+    if now.hour == 10 and now.minute == 30 and not state.get("order_reminder_sent"):
+        msg = format_order_reminder(price_data)
+        send_wx(msg)
+        state["order_reminder_sent"] = True
         save_state(state)
         return
     
@@ -207,30 +275,12 @@ def main():
             save_state(state)
             return
     
-    # 止盈止损触发
-    if price >= TAKE_PROFIT and "take_profit" not in state["alerted_types"]:
-        msg = f"🎯 【止盈触发！】\n"
-        msg += f"{STOCK_NAME} 现价{price:.2f} (+{profit_pct:.1f}%)\n"
-        msg += f"建议卖出{SHARES//2}股，回收{SHARES//2*price:.0f}元\n"
-        msg += f"剩余{SHARES//2}股继续持有"
-        send_wx(msg)
-        state["alerted_types"].append("take_profit")
-        save_state(state)
-        return
-    
-    if price <= STOP_LOSS and "stop_loss" not in state["alerted_types"]:
-        msg = f"🚨 【止损触发！】\n"
-        msg += f"{STOCK_NAME} 现价{price:.2f} ({profit_pct:.1f}%)\n"
-        msg += f"建议清仓{SHARES}股，亏损{(price-AVG_COST)*SHARES:.0f}元"
-        send_wx(msg)
-        state["alerted_types"].append("stop_loss")
-        save_state(state)
-        return
-    
+    # 接近关键价位时推送挂单提醒
     if price >= WARN_HIGH and "warn_high" not in state["alerted_types"]:
         msg = f"📈 【接近止盈】\n"
         msg += f"{STOCK_NAME} 现价{price:.2f} (+{profit_pct:.1f}%)\n"
-        msg += f"距止盈{TAKE_PROFIT}还差{(TAKE_PROFIT-price)/price*100:.1f}%"
+        msg += f"距止盈{TAKE_PROFIT}还差{(TAKE_PROFIT-price)/price*100:.1f}%\n\n"
+        msg += format_order_reminder(price_data)
         send_wx(msg)
         state["alerted_types"].append("warn_high")
         save_state(state)
@@ -239,9 +289,40 @@ def main():
     if price <= WARN_LOW and "warn_low" not in state["alerted_types"]:
         msg = f"📉 【接近止损】\n"
         msg += f"{STOCK_NAME} 现价{price:.2f} ({profit_pct:.1f}%)\n"
-        msg += f"距止损{STOP_LOSS}还差{(price-STOP_LOSS)/price*100:.1f}%"
+        msg += f"距止损{STOP_LOSS}还差{(price-STOP_LOSS)/price*100:.1f}%\n\n"
+        msg += format_order_reminder(price_data)
         send_wx(msg)
         state["alerted_types"].append("warn_low")
+        save_state(state)
+        return
+    
+    # 止盈止损触发
+    if price >= TAKE_PROFIT and "take_profit" not in state["alerted_types"]:
+        msg = f"🎯 【止盈触发！】\n"
+        msg += f"{STOCK_NAME} 现价{price:.2f} (+{profit_pct:.1f}%)\n"
+        msg += f"━━━━━━━━━━━━━━━━\n"
+        msg += f"✅ 建议立即卖出{SHARES//2}股\n"
+        msg += f"   回收：{SHARES//2*price:.0f}元\n"
+        msg += f"   盈利：{SHARES//2*(price-AVG_COST):.0f}元\n"
+        msg += f"━━━━━━━━━━━━━━━━\n"
+        msg += f"📌 剩余{SHARES//2}股挂单：\n"
+        msg += f"   {LIMIT_SELL_2}元（再赚{(LIMIT_SELL_2-price)*SHARES//2:.0f}元）\n"
+        msg += f"   {LIMIT_SELL_3}元（原目标价）"
+        send_wx(msg)
+        state["alerted_types"].append("take_profit")
+        save_state(state)
+        return
+    
+    if price <= STOP_LOSS and "stop_loss" not in state["alerted_types"]:
+        msg = f"🚨 【止损触发！】\n"
+        msg += f"{STOCK_NAME} 现价{price:.2f} ({profit_pct:.1f}%)\n"
+        msg += f"━━━━━━━━━━━━━━━━\n"
+        msg += f"❌ 建议立即清仓{SHARES}股\n"
+        msg += f"   亏损：{(price-AVG_COST)*SHARES:.0f}元\n"
+        msg += f"━━━━━━━━━━━━━━━━\n"
+        msg += f"⚠️ 不要幻想回本，止损第一！"
+        send_wx(msg)
+        state["alerted_types"].append("stop_loss")
         save_state(state)
         return
 
