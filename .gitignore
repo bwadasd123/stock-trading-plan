@@ -1,10 +1,22 @@
+# 敏感信息
+*.env
+.env.*
+secrets/
+*.key
+*.pem
+
 # 状态文件
-*.json.bak
 .monitor_state.json
+*.bak
+
+# 持仓记录（隐私）
+positions/current.json
+history/*.json
 
 # Python
 __pycache__/
 *.pyc
+*.pyo
 
 # IDE
 .vscode/
@@ -13,3 +25,7 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+/tmp/

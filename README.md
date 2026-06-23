@@ -1,102 +1,138 @@
-# 📈 3万本金股票交易系统
+# 股票价格监控系统
 
-基于A股智能筛选系统的实战交易策略，包含完整交易流程、价格监控、记录复盘。
+基于A股智能筛选系统的实时价格监控，推送到企业微信群。
 
-## 📂 仓库结构
+## 功能
+
+- 🔔 开盘播报 9:30
+- ⏰ 整点播报 每小时
+- ⚡ 涨跌提醒 超1%
+- 📋 挂单提醒 10:30
+- 🎯 止盈触发 +15%
+- 🚨 止损触发 -8%
+- 📊 收盘总结 15:00
+
+## 交易逻辑
+
+**固定止盈止损为主，技术指标作为参考：**
+
+| 项目 | 规则 | 说明 |
+|------|------|------|
+| 止盈 | +15% | 固定目标 |
+| 止损 | -8% | 固定底线 |
+| 持仓 | 3-5天 | 固定时间 |
+| RSI | 参考 | 动态调整建议 |
+| MA10/MA20 | 参考 | 支撑位参考 |
+
+## 快速开始
+
+### 1. 设置环境变量
+
+```bash
+# 企业微信Webhook（必填）
+export WX_WEBHOOK="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=你的key"
+
+# 或者写入 ~/.bashrc
+echo 'export WX_WEBHOOK="你的webhook地址"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### 2. 修改配置
+
+编辑 `scripts/price_monitor.py`，修改以下配置：
+
+```python
+# 股票配置
+STOCK_CODE = "0.002972"    # 东财secid格式
+STOCK_NAME = "科安达"
+AVG_COST = 16.443          # 持仓均价
+SHARES = 400               # 持仓数量
+DB_TS_CODE = "002972"      # 数据库中的股票代码
+
+# 止盈止损（固定）
+TAKE_PROFIT_PCT = 15       # +15%
+STOP_LOSS_PCT = 8          # -8%
+HOLD_DAYS = "3-5天"
+```
+
+### 3. 部署定时任务
+
+```bash
+# 添加到crontab
+crontab -e
+
+# 每5分钟运行（交易时间）
+*/5 9-15 * * 1-5 WX_WEBHOOK="你的key" cd /path/to/stock-trading-plan && python3 scripts/price_monitor.py >> /tmp/monitor.log 2>&1
+```
+
+### 4. 测试运行
+
+```bash
+# 手动测试
+WX_WEBHOOK="你的key" python3 scripts/price_monitor.py
+```
+
+## 推送消息示例
+
+```
+📈 科安达 17.67 (+7.5%)
+━━━━━━━━━━━━━━━━
+💰 持仓：400股 | 市值：7068元
+📊 盈亏：+490元
+━━━━━━━━━━━━━━━━
+🔺 今日：+2.20%
+📏 振幅：3.76%
+🔄 换手：7.94%
+━━━━━━━━━━━━━━━━
+🟢 外盘：55695手 (53%)
+🔴 内盘：49242手 (47%)
+📊 判断：买方强势 ✅
+━━━━━━━━━━━━━━━━
+🎯 止盈：18.91 (+15%)
+🚨 止损：15.13 (-8%)
+⏰ 持仓：3-5天
+━━━━━━━━━━━━━━━━
+📊 技术参考
+   RSI14：70.1
+   MA10：15.02
+   MA20：13.61
+```
+
+## 目录结构
 
 ```
 stock-trading-plan/
 ├── README.md              # 项目说明
-├── skill/                 # ⭐ 交易系统Skill（别人学习用）
-│   ├── SKILL.md           # 完整交易文档
-│   ├── templates/         # 可直接使用的模板
-│   └── references/        # 参考文档
-├── positions/             # 当前持仓
+├── skill/                 # 交易系统文档
+│   ├── SKILL.md
+│   ├── templates/
+│   └── references/
+├── positions/             # 持仓记录
 ├── history/               # 交易历史
 ├── scripts/               # 监控脚本
+│   └── price_monitor.py
 └── analysis/              # 收益分析
 ```
 
-## ⭐ Skill（核心）
+## 隐私说明
 
-**完整交易系统文档**，别人加载后可直接使用：
+**本仓库为公开仓库，请勿提交以下敏感信息：**
 
-```
-skill/
-├── SKILL.md                      # 主文档：完整交易流程
-├── templates/
-│   ├── price_monitor.py          # 价格监控脚本（改配置即用）
-│   ├── current_position.json     # 持仓记录模板
-│   └── trades_history.json       # 交易历史模板
-└── references/
-    ├── quick_reference.md        # 快速参考卡（一页纸）
-    └── repository_guide.md       # 仓库使用指南
-```
+- ❌ 企业微信Webhook Key
+- ❌ 数据库密码
+- ❌ API密钥
+- ❌ 个人持仓详情（金额、成本等）
 
-**使用方法**：
-1. 阅读 `skill/SKILL.md` 了解完整策略
-2. 复制 `skill/templates/` 下的模板文件
-3. 修改配置参数（股票代码、webhook等）
-4. 按流程执行交易
+**正确做法：**
+- Webhook Key 通过环境变量传入
+- 数据库配置在 stock-screener 项目的 config.py 中（不提交）
+- 持仓信息在本地 positions/ 目录（已加入 .gitignore）
 
-## 📊 核心参数
+## 相关项目
 
-| 参数 | 值 | 说明 |
-|------|-----|------|
-| 本金 | 30,000元 | 固定不动 |
-| 单股仓位 | 6,000元 (20%) | 最大投入 |
-| 买入方式 | 分两笔，各3,000元 | 降低风险 |
-| 止损线 | -8% | 必须执行 |
-| 止盈目标 | +15% | 分批止盈 |
-| 持仓时间 | 3-5天 | 超时减仓 |
+- [A股智能筛选系统](https://github.com/bwadasd123/stock-screener) - 选股扫描
+- [交易系统Skill](skill/SKILL.md) - 完整交易策略
 
-## 🎯 当前持仓
+## 免责声明
 
-| 股票 | 代码 | 数量 | 均价 | 止盈价 | 止损价 | 买入日 |
-|------|------|------|------|--------|--------|--------|
-| 科安达 | 002972 | 400股 | 16.443 | 18.91 | 15.13 | 2026-06-17 |
-
-## 📱 价格监控
-
-自动推送到企业微信群：
-- 🔔 开盘播报 9:30
-- ⏰ 整点播报 每小时
-- ⚡ 涨跌提醒 超2%
-- 🎯 止盈止损 触发推送
-- 📊 收盘总结 15:00
-
-## 🚀 快速开始
-
-```bash
-# 1. 克隆仓库
-git clone https://github.com/bwadasd123/stock-trading-plan.git
-cd stock-trading-plan
-
-# 2. 阅读完整文档
-cat skill/SKILL.md
-
-# 3. 配置监控脚本
-cp skill/templates/price_monitor.py scripts/
-# 编辑 scripts/price_monitor.py 修改配置
-
-# 4. 部署定时任务
-crontab -e
-# 添加: */5 9-15 * * 1-5 cd /path/to/stock-trading-plan && python3 scripts/price_monitor.py
-```
-
-## 📚 完整文档
-
-详见 [skill/SKILL.md](skill/SKILL.md)，包含：
-- 完整交易流程（扫描→分析→买入→持仓→监控→复盘）
-- RSI持仓策略对照表
-- 风险控制规则
-- 实战教训总结
-- 工具使用说明
-
-## ⚠️ 风险提示
-
-本策略基于历史数据回测，不构成投资建议。股市有风险，投资需谨慎。
-
----
-
-**JMY科技有限公司** | 东财数据部
+本项目仅供学习参考，不构成投资建议。股市有风险，投资需谨慎。
