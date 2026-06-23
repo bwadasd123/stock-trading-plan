@@ -27,6 +27,15 @@ TAKE_PROFIT_PCT = 15
 STOP_LOSS_PCT = 8
 HOLD_DAYS = "3-5天"
 
+# ========== 仓位管理配置 ==========
+TOTAL_CAPITAL = 30000  # 总资金3万
+SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
+SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额6000元
+
+# ========== 持仓天数计算 ==========
+BUY_DATE = "2026-06-17"  # 买入日期
+BUY_DATE_OBJ = datetime.datetime.strptime(BUY_DATE, "%Y-%m-%d").date()
+
 COST_TP = AVG_COST * (1 + TAKE_PROFIT_PCT / 100)
 COST_SL = AVG_COST * (1 - STOP_LOSS_PCT / 100)
 
@@ -224,6 +233,10 @@ def format_status(price_data, tag=""):
     cost_premium = (AVG_COST - scan_price) / scan_price * 100
     change_pct = price_data["change_pct"]
     
+    # 计算持仓天数
+    today = datetime.date.today()
+    holding_days = (today - BUY_DATE_OBJ).days
+    
     sign1 = "+" if profit_from_cost >= 0 else ""
     sign2 = "+" if profit_from_scan >= 0 else ""
     sign3 = "+" if change_pct >= 0 else ""
@@ -245,6 +258,12 @@ def format_status(price_data, tag=""):
     msg += f"📊 持仓盈亏\n"
     msg += f"   持仓 {SHARES}股  市值 {total_value:.0f}元\n"
     msg += f"   盈亏 {sign4}{profit_amount:.0f}元（{sign1}{profit_from_cost:.1f}%）\n"
+    msg += f"   持仓天数 {holding_days}天\n"
+    msg += f"\n"
+    msg += f"💼 仓位管理\n"
+    msg += f"   总资金 {TOTAL_CAPITAL:.0f}元\n"
+    msg += f"   单股仓位 {SINGLE_POSITION_AMOUNT:.0f}元（{SINGLE_POSITION_PCT}%）\n"
+    msg += f"   当前市值 {total_value:.0f}元（{total_value/TOTAL_CAPITAL*100:.1f}%）\n"
     msg += f"\n"
     msg += f"🔍 双重对比\n"
     msg += f"   扫描发现价 {scan_price:.2f}（{scan_time}）\n"
@@ -412,6 +431,56 @@ def main():
             state["alerted_types"].append("rsi_oversold")
             save_state(state)
             return
+    
+    # ========== 持仓天数提醒 ==========
+    today = datetime.date.today()
+    holding_days = (today - BUY_DATE_OBJ).days
+    
+    # 第5天减仓提醒
+    if holding_days >= 5 and "hold_5days" not in state.get("alerted_types", []):
+        msg = f"⏰ 【持仓第{holding_days}天 - 减仓提醒】\n"
+        msg += f"{STOCK_NAME} 现价 {price:.2f}\n"
+        msg += f"━━━━━━━━━━━━━━━━━━━━\n"
+        msg += f"📅 买入日期: {BUY_DATE}\n"
+        msg += f"📅 今天: {today}\n"
+        msg += f"⏰ 持仓天数: {holding_days}天\n"
+        msg += f"━━━━━━━━━━━━━━━━━━━━\n"
+        msg += f"📋 交易纪律: 持仓5天减仓50%\n"
+        msg += f"🎯 建议卖出 {SHARES//2}股\n"
+        msg += f"   回收约 {SHARES//2*price:.0f}元\n"
+        msg += f"━━━━━━━━━━━━━━━━━━━━\n"
+        msg += f"📊 当前盈亏\n"
+        msg += f"   盈利 {(price-AVG_COST)*SHARES:.0f}元（+{(price-AVG_COST)/AVG_COST*100:.1f}%）\n"
+        msg += f"\n"
+        msg += f"⚠️ 重要提醒:\n"
+        msg += f"   1. 不要恋战，严格执行纪律\n"
+        msg += f"   2. 剩余{SHARES//2}股继续持有\n"
+        msg += f"   3. 等待止盈{COST_TP:.2f}或止损{COST_SL:.2f}"
+        send_wx(msg)
+        state["alerted_types"].append("hold_5days")
+        save_state(state)
+        return
+    
+    # 第3天提醒（准备减仓）
+    elif holding_days == 3 and "hold_3days" not in state.get("alerted_types", []):
+        msg = f"⏰ 【持仓第3天 - 准备减仓】\n"
+        msg += f"{STOCK_NAME} 现价 {price:.2f}\n"
+        msg += f"━━━━━━━━━━━━━━━━━━━━\n"
+        msg += f"📅 买入日期: {BUY_DATE}\n"
+        msg += f"📅 今天: {today}\n"
+        msg += f"⏰ 持仓天数: {holding_days}天\n"
+        msg += f"━━━━━━━━━━━━━━━━━━━━\n"
+        msg += f"📋 交易纪律: 持仓3-5天减仓\n"
+        msg += f"💡 建议: 关注明天走势\n"
+        msg += f"   如果明天冲高，优先止盈\n"
+        msg += f"   如果明天继续上涨，第5天减仓\n"
+        msg += f"━━━━━━━━━━━━━━━━━━━━\n"
+        msg += f"📊 当前盈亏\n"
+        msg += f"   盈利 {(price-AVG_COST)*SHARES:.0f}元（+{(price-AVG_COST)/AVG_COST*100:.1f}%）"
+        send_wx(msg)
+        state["alerted_types"].append("hold_3days")
+        save_state(state)
+        return
     
     # 更新last_price
     state["last_price"] = price
