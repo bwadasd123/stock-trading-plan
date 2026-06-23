@@ -1,0 +1,21 @@
+{
+  "updated_at": "2026-06-23",
+  "total_capital": 30000,
+  "positions": [
+    {
+      "code": "002972",
+      "name": "科安达",
+      "shares": 400,
+      "avg_cost": 16.443,
+      "buy_date": "2026-06-17",
+      "buy_price_1": 16.22,
+      "buy_shares_1": 100,
+      "buy_price_2": 16.50,
+      "buy_shares_2": 300,
+      "stop_loss": 15.13,
+      "take_profit": 18.91,
+      "status": "holding",
+      "notes": "第一笔买太少，第二笔追高加仓，教训记录"
+    }
+  ]
+}

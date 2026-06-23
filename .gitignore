@@ -1,0 +1,15 @@
+# 状态文件
+*.json.bak
+.monitor_state.json
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
