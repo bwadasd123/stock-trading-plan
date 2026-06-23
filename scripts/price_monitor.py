@@ -2,7 +2,7 @@
 """
 股票价格监控脚本 v8
 功能：整数涨跌幅提醒 + 定时汇报 + 止盈止损 + 盘口分析
-特色：-10%到+10%每个整数百分比都提醒
+特色：-10%到+10%每个整数百分比都提醒（包括0%）
 """
 
 import urllib.request
@@ -254,7 +254,6 @@ def main():
     
     price = price_data["price"]
     change_pct = price_data["change_pct"]
-    yesterday = price_data["yesterday"]
     profit_pct = (price - AVG_COST) / AVG_COST * 100
     
     # 每天9:30重置状态
@@ -283,39 +282,40 @@ def main():
         return
     
     # ========== 整数涨跌幅提醒 ==========
-    # 计算当前涨跌幅的整数部分
-    current_pct_int = int(change_pct)
+    # 四舍五入到最近的整数
+    current_pct_int = round(change_pct)
     
-    # 检查是否需要提醒（-10%到+10%之间的每个整数）
-    if -10 <= current_pct_int <= 10 and current_pct_int != 0:
+    # 检查是否在-10到+10之间（包括0）
+    if -10 <= current_pct_int <= 10:
         # 检查这个整数百分比是否已经提醒过
         if current_pct_int not in state.get("pct_alerts", []):
-            # 判断是否刚刚穿过这个整数（避免重复触发）
-            last_price = state.get("last_price", price)
-            last_change_pct = (last_price - yesterday) / yesterday * 100
-            last_pct_int = int(last_change_pct)
+            # 发送提醒
+            if current_pct_int == 0:
+                emoji = "➡️"
+                direction = "平盘"
+            elif current_pct_int > 0:
+                emoji = "📈"
+                direction = "涨"
+            else:
+                emoji = "📉"
+                direction = "跌"
             
-            # 只在穿过整数边界时触发
-            if current_pct_int != last_pct_int:
-                direction = "涨" if current_pct_int > 0 else "跌"
-                emoji = "📈" if current_pct_int > 0 else "📉"
-                
-                msg = f"{emoji} 【{direction}幅提醒】\n"
-                msg += f"{STOCK_NAME} 现价 {price:.2f}（{change_pct:+.2f}%）\n"
-                msg += f"━━━━━━━━━━━━━━━━━━━━\n"
-                msg += f"今日{direction}幅达到 {current_pct_int}%\n"
-                msg += f"\n"
-                msg += format_status(price_data)
-                
-                send_wx(msg)
-                
-                # 记录已提醒的百分比
-                if "pct_alerts" not in state:
-                    state["pct_alerts"] = []
-                state["pct_alerts"].append(current_pct_int)
-                state["last_price"] = price
-                save_state(state)
-                return
+            msg = f"{emoji} 【{direction}幅提醒】\n"
+            msg += f"{STOCK_NAME} 现价 {price:.2f}（{change_pct:+.2f}%）\n"
+            msg += f"━━━━━━━━━━━━━━━━━━━━\n"
+            msg += f"今日{direction}幅达到 {current_pct_int}%\n"
+            msg += f"\n"
+            msg += format_status(price_data)
+            
+            send_wx(msg)
+            
+            # 记录已提醒的百分比
+            if "pct_alerts" not in state:
+                state["pct_alerts"] = []
+            state["pct_alerts"].append(current_pct_int)
+            state["last_price"] = price
+            save_state(state)
+            return
     
     # 更新last_price
     state["last_price"] = price
