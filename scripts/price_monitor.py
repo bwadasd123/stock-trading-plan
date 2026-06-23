@@ -238,14 +238,17 @@ def main():
     load_scan_info()
     get_tech_indicators()
     
+    # 收盘总结（15:00推送）
+    if now.hour == 15 and now.minute == 0 and not state.get("close_sent"):
+        price_data = get_price()
+        if price_data:
+            msg = f"📊 【收盘总结】\n\n" + format_status(price_data)
+            send_wx(msg)
+            state["close_sent"] = True
+            save_state(state)
+        return
+    
     if not is_trading_time():
-        if now.hour == 15 and now.minute == 0 and not state.get("close_sent"):
-            price_data = get_price()
-            if price_data:
-                msg = f"📊 【收盘总结】\n\n" + format_status(price_data)
-                send_wx(msg)
-                state["close_sent"] = True
-                save_state(state)
         return
     
     price_data = get_price()
