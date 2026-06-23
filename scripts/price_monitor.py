@@ -23,7 +23,7 @@ TAKE_PROFIT = 18.91    # +15%
 STOP_LOSS = 15.13      # -8%
 WARN_HIGH = 18.00
 WARN_LOW = 16.00
-CHANGE_THRESHOLD = 2.0 # 涨跌幅超过2%推送
+CHANGE_THRESHOLD = 1.0 # 涨跌幅超过2%推送
 
 STATE_FILE = ".monitor_state.json"
 
