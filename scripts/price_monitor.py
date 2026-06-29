@@ -400,6 +400,40 @@ def main():
     if not is_trading_time():
         return
     
+    # ========== 大盘风控（每天检查一次）==========
+    if "market_warned" not in state:
+        try:
+            mkt_url = "http://push2delay.eastmoney.com/api/qt/ulist.np/get?fltt=2&fields=f2,f3,f4,f12,f14&secids=1.000001,0.399001,0.399006"
+            mkt_req = urllib.request.Request(mkt_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(mkt_req, timeout=5) as resp:
+                mkt_data = json.loads(resp.read())
+            indices = mkt_data.get("data", {}).get("diff", [])
+            max_drop = 0
+            max_drop_name = ""
+            for idx in indices:
+                pct = idx.get("f3", 0)
+                if pct < max_drop:
+                    max_drop = pct
+                    max_drop_name = idx.get("f14", "")
+            
+            if max_drop <= -3:
+                msg = f"🚨 【大盘暴跌警告！】\n"
+                msg += f"{max_drop_name} 跌幅 {max_drop:.2f}%\n"
+                msg += f"⚠️ 系统性风险！建议暂停买入\n"
+                msg += f"📋 持仓注意止损\n━━━━━━━━━━━━━━━━━━━━"
+                send_wx(msg)
+                state["market_warned"] = True
+                save_state(state)
+            elif max_drop <= -2:
+                msg = f"⚠️ 【大盘下跌警告】\n"
+                msg += f"{max_drop_name} 跌幅 {max_drop:.2f}%\n"
+                msg += f"📋 市场偏弱，控制仓位\n━━━━━━━━━━━━━━━━━━━━"
+                send_wx(msg)
+                state["market_warned"] = True
+                save_state(state)
+        except:
+            pass
+    
     # 开盘播报
     if now.hour == 9 and now.minute == 30 and not state.get("open_sent"):
         msg = f"🔔 【开盘播报】\n\n"
@@ -493,6 +527,41 @@ def main():
                 state["alerted"][key].append("near_tp")
                 save_state(state)
                 continue
+        
+        # ========== RSI极端值预警 ==========
+        if stock["cost"]:
+            rsi = get_rsi(stock["code"])
+            if rsi is not None:
+                if rsi > 90 and "rsi_overbought_90" not in state["alerted"][key]:
+                    profit = (price - stock["cost"]) * stock["shares"]
+                    msg = f"🔴 【{stock['name']} RSI极度超买！】\n"
+                    msg += f"RSI(14) = {rsi:.1f}\n"
+                    msg += f"现价 {price:.3f}  |  盈亏 {profit:+.0f}元\n"
+                    msg += f"⚠️ 极度超买信号，回调概率极大\n"
+                    msg += f"🎯 建议立即减仓！\n━━━━━━━━━━━━━━━━━━━━"
+                    send_wx(msg)
+                    state["alerted"][key].append("rsi_overbought_90")
+                    save_state(state)
+                    continue
+                elif rsi > 80 and "rsi_overbought_80" not in state["alerted"][key]:
+                    profit = (price - stock["cost"]) * stock["shares"]
+                    msg = f"⚠️ 【{stock['name']} RSI超买】\n"
+                    msg += f"RSI(14) = {rsi:.1f}\n"
+                    msg += f"现价 {price:.3f}  |  盈亏 {profit:+.0f}元\n"
+                    msg += f"📋 超买区域，注意回调风险\n━━━━━━━━━━━━━━━━━━━━"
+                    send_wx(msg)
+                    state["alerted"][key].append("rsi_overbought_80")
+                    save_state(state)
+                    continue
+                elif rsi < 20 and "rsi_oversold" not in state["alerted"][key]:
+                    msg = f"🟢 【{stock['name']} RSI超卖】\n"
+                    msg += f"RSI(14) = {rsi:.1f}\n"
+                    msg += f"现价 {price:.3f}\n"
+                    msg += f"💡 超卖区域，可关注反弹机会\n━━━━━━━━━━━━━━━━━━━━"
+                    send_wx(msg)
+                    state["alerted"][key].append("rsi_oversold")
+                    save_state(state)
+                    continue
         
         # 涨停跌停提醒（支持多次触发）
         # 获取上一次状态
