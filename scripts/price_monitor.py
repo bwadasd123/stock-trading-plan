@@ -103,6 +103,17 @@ STOCKS = [
         "tp_pct": 10,
         "sl_pct": 5,
         "type": "观察"
+    },
+    {
+        "code": "0.002141",
+        "name": "贤丰控股",
+        "ts_code": "002141",
+        "cost": 5.265,
+        "shares": 1100,
+        "buy_date": "2026-06-29",
+        "tp_pct": 15,
+        "sl_pct": 8,
+        "type": "持仓"
     }
 ]
 
@@ -432,13 +443,64 @@ def main():
         if key not in state.get("alerted", {}):
             state.setdefault("alerted", {})[key] = []
         
+        # ========== 止盈止损优先检查（不受return影响）==========
+        if stock["cost"]:
+            tp = stock["cost"] * (1 + stock["tp_pct"] / 100)
+            sl = stock["cost"] * (1 - stock["sl_pct"] / 100)
+            cost_pct = (price - stock["cost"]) / stock["cost"] * 100
+            profit = (price - stock["cost"]) * stock["shares"]
+            
+            # 止盈触发
+            if price >= tp and "tp" not in state["alerted"][key]:
+                msg = f"🎯 【{stock['name']} 止盈触发！】\n"
+                msg += f"现价 {price:.3f}  |  盈利 {profit:+.0f}元\n"
+                msg += f"建议卖出！\n━━━━━━━━━━━━━━━━━━━━"
+                send_wx(msg)
+                state["alerted"][key].append("tp")
+                save_state(state)
+                continue
+            
+            # 止损触发
+            if price <= sl and "sl" not in state["alerted"][key]:
+                msg = f"🚨 【{stock['name']} 止损触发！】\n"
+                msg += f"现价 {price:.3f}  |  亏损 {profit:.0f}元\n"
+                msg += f"建议清仓！\n━━━━━━━━━━━━━━━━━━━━"
+                send_wx(msg)
+                state["alerted"][key].append("sl")
+                save_state(state)
+                continue
+            
+            # 逼近止损（距止损≤3%，每天提醒一次）
+            dist_sl = (1 - sl / price) * 100 if price > sl else 0
+            if 0 < dist_sl <= 3 and "near_sl" not in state["alerted"][key]:
+                msg = f"⚠️ 【{stock['name']} 逼近止损！】\n"
+                msg += f"现价 {price:.3f}  |  止损 {sl:.3f}\n"
+                msg += f"距止损仅 {dist_sl:.1f}%  |  浮亏 {profit:.0f}元\n"
+                msg += f"⚠️ 注意风险！\n━━━━━━━━━━━━━━━━━━━━"
+                send_wx(msg)
+                state["alerted"][key].append("near_sl")
+                save_state(state)
+                continue
+            
+            # 逼近止盈（距止盈≤5%）
+            dist_tp = (tp / price - 1) * 100
+            if 0 < dist_tp <= 5 and "near_tp" not in state["alerted"][key]:
+                msg = f"🎯 【{stock['name']} 逼近止盈！】\n"
+                msg += f"现价 {price:.3f}  |  止盈 {tp:.3f}\n"
+                msg += f"距止盈仅 {dist_tp:.1f}%  |  浮盈 {profit:+.0f}元\n"
+                msg += f"准备减仓！\n━━━━━━━━━━━━━━━━━━━━"
+                send_wx(msg)
+                state["alerted"][key].append("near_tp")
+                save_state(state)
+                continue
+        
         # 涨停跌停提醒（支持多次触发）
         # 获取上一次状态
         prev_limit_up = state.get("prev_limit_up", {}).get(key, False)
         prev_limit_down = state.get("prev_limit_down", {}).get(key, False)
         
-        is_limit_up = change_pct >= 9.5
-        is_limit_down = change_pct <= -9.5
+        is_limit_up = change_pct >= 9.95
+        is_limit_down = change_pct <= -9.95
         
         # 涨停状态变化
         if is_limit_up and not prev_limit_up:
@@ -536,43 +598,18 @@ def main():
                 save_state(state)
                 return
         
-        # 止盈止损提醒
-        if stock["cost"]:
-            tp = stock["cost"] * (1 + stock["tp_pct"] / 100)
-            sl = stock["cost"] * (1 - stock["sl_pct"] / 100)
-            
-            if price >= tp and "tp" not in state["alerted"][key]:
+        # 持仓天数提醒
+        if stock["cost"] and stock.get("buy_date"):
+            holding_days = get_trading_days(stock["buy_date"])
+            if holding_days >= MAX_HOLD_DAYS and "hold_days" not in state["alerted"][key]:
                 profit = (price - stock["cost"]) * stock["shares"]
-                msg = f"🎯 【{stock['name']} 止盈触发！】\n"
-                msg += f"现价 {price:.3f}  |  盈利 {'+' if profit >= 0 else ''}{profit:.0f}元\n"
-                msg += f"建议卖出！"
+                msg = f"⏰ 【{stock['name']} 持仓超{MAX_HOLD_DAYS}天！】\n"
+                msg += f"现价 {price:.3f}  |  盈亏 {profit:+.0f}元\n"
+                msg += f"持仓 {holding_days}天  |  建议减仓或清仓\n━━━━━━━━━━━━━━━━━━━━"
                 send_wx(msg)
-                state["alerted"][key].append("tp")
+                state["alerted"][key].append("hold_days")
                 save_state(state)
                 return
-            
-            if price <= sl and "sl" not in state["alerted"][key]:
-                profit = (price - stock["cost"]) * stock["shares"]
-                msg = f"🚨 【{stock['name']} 止损触发！】\n"
-                msg += f"现价 {price:.3f}  |  亏损 {profit:.0f}元\n"
-                msg += f"建议清仓！"
-                send_wx(msg)
-                state["alerted"][key].append("sl")
-                save_state(state)
-                return
-            
-            # ========== 持仓天数提醒 ==========
-            if stock.get("buy_date"):
-                holding_days = get_trading_days(stock["buy_date"])
-                if holding_days >= MAX_HOLD_DAYS and "hold_days" not in state["alerted"][key]:
-                    profit = (price - stock["cost"]) * stock["shares"]
-                    msg = f"⏰ 【{stock['name']} 持仓超{MAX_HOLD_DAYS}天！】\n"
-                    msg += f"现价 {price:.3f}  |  盈利 {'+' if profit >= 0 else ''}{profit:.0f}元\n"
-                    msg += f"持仓 {holding_days}天  |  建议减仓或清仓"
-                    send_wx(msg)
-                    state["alerted"][key].append("hold_days")
-                    save_state(state)
-                    return
         
         # 观察股票特殊提醒
         if not stock["cost"]:
