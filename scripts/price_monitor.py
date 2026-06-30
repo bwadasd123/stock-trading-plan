@@ -32,7 +32,7 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 32319  # 3万本金 + 盈利2319  # 总资金3万
+TOTAL_CAPITAL = 32566  # 3万本金 + 盈利2566 (+247东方锆业涨停清仓)
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
 SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额6000元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
@@ -75,12 +75,12 @@ STOCKS = [
         "code": "0.002167",
         "name": "东方锆业",
         "ts_code": "002167",
-        "cost": 21.247,
-        "shares": 300,
-        "buy_date": "2026-06-26",  # 买入日期
+        "cost": None,  # 06-30 涨停清仓 +247元
+        "shares": 0,
+        "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
-        "type": "持仓"
+        "type": "观察"
     },
     {
         "code": "0.159599",
