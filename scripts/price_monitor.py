@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-股票价格监控脚本 v13
+股票价格监控脚本 v14
 监控持仓+扫描结果
 功能：仓位管理 + 持仓天数提醒 + 整数涨跌幅提醒 + 止盈止损 + 盘口分析
++ 交易通知（买卖推送）
 """
 
 import urllib.request
@@ -121,82 +122,98 @@ STATE_FILE = "/home/jmy/.hermes/profiles/eastmoney-bot/.monitor_state.json"
 
 # ========== 核心函数 ==========
 
-def send_wx(content):
+def send_wx(msg):
+    """发送企业微信通知"""
     if not WX_WEBHOOK:
-        return False
-    data = json.dumps({"msgtype": "text", "text": {"content": content}}).encode()
-    req = urllib.request.Request(WX_WEBHOOK, data=data, headers={"Content-Type": "application/json"})
+        return
     try:
-        urllib.request.urlopen(req, timeout=10)
-        return True
-    except:
-        return False
-
-def calculate_rsi(closes, period=14):
-    if len(closes) < period + 1:
-        return None
-    deltas = [closes[i] - closes[i-1] for i in range(1, len(closes))]
-    gains = [d if d > 0 else 0 for d in deltas]
-    losses = [-d if d < 0 else 0 for d in deltas]
-    avg_gain = sum(gains[:period]) / period
-    avg_loss = sum(losses[:period]) / period
-    for i in range(period, len(deltas)):
-        avg_gain = (avg_gain * (period - 1) + gains[i]) / period
-        avg_loss = (avg_loss * (period - 1) + losses[i]) / period
-    if avg_loss == 0:
-        return 100
-    rs = avg_gain / avg_loss
-    return 100 - (100 / (1 + rs))
-
-def get_rsi(secid):
-    try:
-        url = f"http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={secid}&fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&end=20500101&lmt=30"
-        req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read())
-            if data.get("data") and data["data"].get("klines"):
-                klines = data["data"]["klines"]
-                closes = [float(k.split(",")[2]) for k in klines]
-                return calculate_rsi(closes)
-    except:
+        data = json.dumps({"msgtype": "text", "text": {"content": msg}}).encode()
+        req = urllib.request.Request(WX_WEBHOOK, data=data, headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=5)
+    except Exception as e:
         pass
-    return None
-
-def get_price(secid):
-    url = f"http://push2delay.eastmoney.com/api/qt/stock/get?secid={secid}&fltt=2&fields=f43,f44,f45,f46,f47,f48,f49,f60,f161,f170,f85"
-    try:
-        req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read())["data"]
-            price = data["f43"]
-            high = data["f44"]
-            low = data["f45"]
-            yesterday = data["f60"]
-            change_pct = data["f170"]
-            outer = data["f49"]
-            inner = data["f161"]
-            total_vol = outer + inner
-            outer_ratio = outer / total_vol * 100 if total_vol > 0 else 50
-            return {
-                "price": price, "high": high, "low": low,
-                "yesterday": yesterday, "change_pct": change_pct,
-                "outer_ratio": outer_ratio
-            }
-    except:
-        return None
 
 def load_state():
-    try:
-        with open(STATE_FILE, "r") as f:
-            return json.load(f)
-    except:
-        return {"alerted": {}, "open_sent": False, "close_sent": False}
+    """加载状态文件"""
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            pass
+    return {}
 
 def save_state(state):
-    with open(STATE_FILE, "w") as f:
-        json.dump(state, f, default=str)
+    """保存状态文件"""
+    try:
+        with open(STATE_FILE, 'w') as f:
+            json.dump(state, f, ensure_ascii=False)
+    except:
+        pass
+
+def get_price(code):
+    """获取股票实时价格"""
+    os.environ['NO_PROXY'] = '*'
+    try:
+        url = f"http://push2delay.eastmoney.com/api/qt/stock/get?secid={code}&fltt=2&fields=f43,f44,f45,f46,f47,f48,f50,f57,f58,f169,f170,f60"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+        d = data.get("data", {})
+        return {
+            "price": d.get("f43", 0),
+            "high": d.get("f44", 0),
+            "low": d.get("f45", 0),
+            "open": d.get("f46", 0),
+            "volume": d.get("f47", 0),
+            "amount": d.get("f48", 0),
+            "change_pct": d.get("f170", 0),
+            "yesterday_close": d.get("f60", 0),
+        }
+    except:
+        return None
+
+def get_rsi(code):
+    """获取RSI"""
+    try:
+        secid_map = {"0.002167": "0.002167", "0.159599": "0.159599", "1.513100": "1.513100", "0.002141": "0.002141"}
+        secid = secid_map.get(code, code)
+        url = f"http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={secid}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&end=20500101&lmt=30"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+        
+        klines = data.get("data", {}).get("klines", [])
+        if len(klines) < 15:
+            return None
+        
+        closes = [float(k.split(",")[2]) for k in klines[-30:]]
+        
+        # RSI计算
+        deltas = [closes[i] - closes[i-1] for i in range(1, len(closes))]
+        period = 14
+        if len(deltas) < period:
+            return None
+        
+        gains = [d if d > 0 else 0 for d in deltas]
+        losses = [-d if d < 0 else 0 for d in deltas]
+        
+        avg_gain = sum(gains[:period]) / period
+        avg_loss = sum(losses[:period]) / period
+        
+        for i in range(period, len(deltas)):
+            avg_gain = (avg_gain * (period - 1) + gains[i]) / period
+            avg_loss = (avg_loss * (period - 1) + losses[i]) / period
+        
+        if avg_loss == 0:
+            return 100
+        rs = avg_gain / avg_loss
+        return 100 - (100 / (1 + rs))
+    except:
+        return None
 
 def is_trading_time():
+    """判断是否在交易时间"""
     now = datetime.datetime.now()
     if now.weekday() >= 5:
         return False
@@ -299,69 +316,38 @@ def generate_advice():
         price = price_data['price']
         change_pct = price_data['change_pct']
         
-        if stock['type'] == '持仓' and stock['cost']:
+        if stock['cost']:
             has_position = True
-            cost = stock['cost']
-            shares = stock['shares']
-            profit_pct = (price - cost) / cost * 100
-            profit_amount = (price - cost) * shares
-            tp = cost * (1 + stock['tp_pct'] / 100)
-            sl = cost * (1 - stock['sl_pct'] / 100)
-            dist_tp = (tp / price - 1) * 100
-            dist_sl = (1 - sl / price) * 100
+            cost_pct = (price - stock['cost']) / stock['cost'] * 100
+            tp = stock['cost'] * (1 + stock['tp_pct'] / 100)
+            sl = stock['cost'] * (1 - stock['sl_pct'] / 100)
+            dist_tp = (tp - price) / price * 100
+            dist_sl = (price - sl) / price * 100
             
-            # 持仓天数
-            holding_days = 0
+            msg += f"🎯 {stock['name']}:\n"
+            if price >= tp:
+                msg += "🚨 已到止盈位！建议立即减仓\n"
+            elif price <= sl:
+                msg += "🔴 已到止损位！建议清仓\n"
+            elif dist_tp <= 5:
+                msg += f"🎯 逼近止盈(距{dist_tp:.1f}%)，冲高减仓\n"
+            elif cost_pct >= 8:
+                msg += "💰 浮盈8%+，可考虑锁定利润\n"
+            elif cost_pct <= -3:
+                msg += f"⚠️ 浮亏3%+，注意风险\n"
+            
+            # T+1检查
             if stock.get('buy_date'):
                 holding_days = get_trading_days(stock['buy_date'])
-            
-            # 仓位占比
-            position_value = cost * shares
-            position_pct = position_value / TOTAL_CAPITAL * 100
-            
-            msg += f"\n🎯 {stock['name']}:\n"
-            
-            # 生成建议
-            if price >= tp:
-                msg += "🚨 【已到止盈位！建议立即减仓】\n"
-            elif price <= sl:
-                msg += "🔴 【已到止损位！建议清仓】\n"
-            elif holding_days >= MAX_HOLD_DAYS:
-                msg += f"⏰ 【持仓超{MAX_HOLD_DAYS}天！建议减仓或清仓】\n"
-            elif position_value > SINGLE_POSITION_AMOUNT:
-                msg += f"💼 【超仓！当前{position_pct:.0f}%，建议减到{SINGLE_POSITION_PCT}%】\n"
-            elif dist_tp <= 3:
-                msg += "🎯 逼近止盈！冲高减半仓\n"
-            elif profit_pct >= 6:
-                msg += "💰 浮盈6%+，可考虑减仓锁定利润\n"
-            elif profit_pct >= 5:
-                msg += "💰 浮盈5%+，继续持有等止盈\n"
-            elif profit_pct >= 3:
-                msg += "✅ 浮盈3%+，趋势向好\n"
-            elif profit_pct <= -3:
-                msg += "⚠️ 浮亏3%+，注意风险\n"
-            else:
-                msg += "📊 持有中，观望\n"
+                if holding_days >= MAX_HOLD_DAYS:
+                    msg += f"⏰ 持仓{holding_days}天超限！建议减仓\n"
         else:
-            msg += f"\n👀 {stock['name']} 观察:\n"
-            msg += f"现价 {price:.3f} | 今日 {change_pct:+.2f}%\n"
-            
-            # 仓位建议
-            if price > 0:
-                suggested_shares = int(SINGLE_POSITION_AMOUNT / price / 100) * 100
-                if suggested_shares > 0:
-                    msg += f"💡 建议仓位 {suggested_shares}股({suggested_shares * price:.0f}元)\n"
-            
-            if change_pct >= 5:
-                msg += "🚀 大涨中，不追高\n"
-            elif change_pct <= -3:
-                msg += "📉 大跌中，可关注建仓机会\n"
-            else:
-                msg += "📊 等待回调建仓\n"
-        
-        msg += "━━━━━━━━━━━━━━━━━━━━\n"
+            # 观察股票建议
+            if change_pct >= 8:
+                msg += f"📈 {stock['name']}: 大涨中，不追高\n"
+            elif change_pct <= -5:
+                msg += f"📉 {stock['name']}: 大跌中，关注机会\n"
     
-    # 如果全部空仓，显示提示
     if not has_position:
         msg += "\n💼 当前全部空仓，等待信号\n"
         msg += "━━━━━━━━━━━━━━━━━━━━\n"
@@ -380,8 +366,20 @@ def main():
             "open_sent": False,
             "close_sent": False,
             "last_hourly": None,
-            "today": today_str
+            "today": today_str,
+            "prev_limit_up": {},
+            "prev_limit_down": {},
+            "market_warned": False,
+            "pending_trades": state.get("pending_trades", []),  # 保留跨日未发送的交易通知
         }
+        save_state(state)
+    
+    # ======== 交易通知（pending_trades队列）========
+    pending = state.get("pending_trades", [])
+    if pending:
+        for trade in pending:
+            send_wx(trade["msg"])
+        state["pending_trades"] = []
         save_state(state)
     
     # 收盘播报
@@ -608,105 +606,67 @@ def main():
         state.setdefault("prev_limit_down", {})[key] = is_limit_down
         save_state(state)
         
-        # 逼近涨停跌停提醒（只触发一次）
-        if change_pct >= 8 and not is_limit_up:
-            alert_key = "near_limit_up"
-            if alert_key not in state["alerted"][key]:
-                msg = f"📈 【{stock['name']} 逼近涨停！】\n"
+        # ========== 整数涨跌幅提醒 ==========
+        current_pct_int = round(change_pct)
+        if -10 <= current_pct_int <= 10:
+            alert_key = f"pct_{current_pct_int}"
+            if alert_key not in state["alerted"].get(key, []):
+                direction = "📈" if current_pct_int > 0 else ("📉" if current_pct_int < 0 else "➡️")
+                msg = f"{direction} 【{stock['name']} {current_pct_int:+d}%】\n"
                 msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
                 msg += f"━━━━━━━━━━━━━━━━━━━━"
                 send_wx(msg)
                 state["alerted"][key].append(alert_key)
                 save_state(state)
-                return
-        elif change_pct <= -8 and not is_limit_down:
-            alert_key = "near_limit_down"
-            if alert_key not in state["alerted"][key]:
-                msg = f"📉 【{stock['name']} 逼近跌停！】\n"
-                msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
-                msg += f"━━━━━━━━━━━━━━━━━━━━"
-                send_wx(msg)
-                state["alerted"][key].append(alert_key)
-                save_state(state)
-                return
         
-        # 今日涨跌幅提醒（整数%）
-        pct_int = round(change_pct)
-        if -10 <= pct_int <= 10:
-            alert_key = f"pct_{pct_int}"
-            if alert_key not in state["alerted"][key]:
-                msg = f"{'📈' if pct_int > 0 else '📉' if pct_int < 0 else '➡️'} 【{stock['name']} 涨跌幅提醒】\n"
-                msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
-                
-                if stock["cost"]:
-                    cost_pct = (price - stock["cost"]) / stock["cost"] * 100
-                    profit = (price - stock["cost"]) * stock["shares"]
-                    msg += f"成本涨幅 {cost_pct:+.1f}%  |  盈亏 {'+' if profit >= 0 else ''}{profit:.0f}元\n"
-                
-                msg += f"━━━━━━━━━━━━━━━━━━━━"
-                send_wx(msg)
-                state["alerted"][key].append(alert_key)
-                save_state(state)
-                return
-        
-        # 成本线提醒（0.5%间隔）
+        # ========== 成本线提醒（0.5%间隔）==========
         if stock["cost"]:
             cost_pct = (price - stock["cost"]) / stock["cost"] * 100
-            cost_pct_rounded = round(cost_pct * 2) / 2
+            cost_pct_rounded = round(cost_pct * 2) / 2  # 四舍五入到0.5%
             
-            alert_key = f"cost_{cost_pct_rounded}"
-            if alert_key not in state["alerted"][key]:
-                profit = (price - stock["cost"]) * stock["shares"]
-                emoji = "💰" if cost_pct >= 0 else "⚠️"
-                msg = f"{emoji} 【{stock['name']} 成本线提醒】\n"
-                msg += f"现价 {price:.3f}  |  成本涨幅 {cost_pct:+.1f}%\n"
-                msg += f"盈亏 {'+' if profit >= 0 else ''}{profit:.0f}元\n"
-                msg += f"━━━━━━━━━━━━━━━━━━━━"
-                send_wx(msg)
-                state["alerted"][key].append(alert_key)
-                save_state(state)
-                return
+            # 检查是否在提醒范围内
+            if -13 <= cost_pct_rounded <= 10:
+                alert_key = f"cost_{cost_pct_rounded:.1f}"
+                if alert_key not in state["alerted"].get(key, []):
+                    direction = "📈" if cost_pct_rounded > 0 else ("📉" if cost_pct_rounded < 0 else "➡️")
+                    msg = f"{direction} 【{stock['name']} 成本{cost_pct_rounded:+.1f}%】\n"
+                    msg += f"现价 {price:.3f}  |  成本 {stock['cost']:.3f}\n"
+                    msg += f"盈亏 {(price - stock['cost']) * stock['shares']:+.0f}元\n"
+                    msg += f"━━━━━━━━━━━━━━━━━━━━"
+                    send_wx(msg)
+                    state["alerted"][key].append(alert_key)
+                    save_state(state)
         
-        # 持仓天数提醒
-        if stock["cost"] and stock.get("buy_date"):
+        # ========== 持仓天数提醒 ==========
+        if stock.get("buy_date") and stock["cost"]:
             holding_days = get_trading_days(stock["buy_date"])
-            if holding_days >= MAX_HOLD_DAYS and "hold_days" not in state["alerted"][key]:
-                profit = (price - stock["cost"]) * stock["shares"]
+            if holding_days >= MAX_HOLD_DAYS and "hold_days" not in state["alerted"].get(key, []):
                 msg = f"⏰ 【{stock['name']} 持仓超{MAX_HOLD_DAYS}天！】\n"
-                msg += f"现价 {price:.3f}  |  盈亏 {profit:+.0f}元\n"
-                msg += f"持仓 {holding_days}天  |  建议减仓或清仓\n━━━━━━━━━━━━━━━━━━━━"
+                msg += f"现价 {price:.3f}  |  持仓 {holding_days}天\n"
+                msg += f"建议减仓或清仓\n━━━━━━━━━━━━━━━━━━━━"
                 send_wx(msg)
                 state["alerted"][key].append("hold_days")
                 save_state(state)
-                return
         
-        # 观察股票特殊提醒
+        # ========== 观察股票买入信号 ==========
         if not stock["cost"]:
-            if change_pct >= 9.9 and "limit_up" not in state["alerted"][key]:
-                msg = f"🚀 【{stock['name']} 涨停！】\n现价 {price:.3f}"
-                send_wx(msg)
-                state["alerted"][key].append("limit_up")
-                save_state(state)
-                return
-            
-            # 买入信号提醒
-            # 信号1: 从大跌中恢复（跌幅收窄到-2%以内）
+            # 信号1: 从大跌中恢复
             if change_pct >= -2 and change_pct <= 0:
-                # 检查之前是否大跌过（有pct_-5, -6, -7等记录）
-                has_big_drop = any(k.startswith("pct_-") and int(k.split("_")[1]) <= -5 for k in state["alerted"].get(key, []))
+                has_big_drop = any(k.startswith("pct_-") and int(k.split("_")[1]) <= -5 
+                                 for k in state["alerted"].get(key, []))
                 if has_big_drop and "buy_recovery" not in state["alerted"].get(key, []):
                     msg = f"💡 【{stock['name']} 企稳信号】\n"
                     msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
                     msg += f"从大跌中恢复，可考虑建仓\n"
                     suggested_shares = int(SINGLE_POSITION_AMOUNT / price / 100) * 100
                     if suggested_shares > 0:
-                        msg += f"建议仓位: {suggested_shares}股({suggested_shares * price:.0f}元)"
+                        msg += f"建议仓位: {suggested_shares}股({suggested_shares * price:.0f}元)\n"
+                    msg += f"━━━━━━━━━━━━━━━━━━━━"
                     send_wx(msg)
                     state.setdefault("alerted", {}).setdefault(key, []).append("buy_recovery")
                     save_state(state)
-                    return
             
-            # 信号2: 跌幅收窄（从-5%以上收窄到-3%以内）
+            # 信号2: 跌幅收窄
             if change_pct >= -3 and change_pct <= 0:
                 prev_pcts = [k for k in state["alerted"].get(key, []) if k.startswith("pct_-")]
                 if prev_pcts:
@@ -714,25 +674,23 @@ def main():
                     if min_pct <= -5 and "buy_narrow" not in state["alerted"].get(key, []):
                         msg = f"📉➡️📈 【{stock['name']} 跌幅收窄】\n"
                         msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
-                        msg += f"从{min_pct}%收窄，关注反弹机会"
+                        msg += f"从{min_pct}%收窄，关注反弹机会\n"
+                        msg += f"━━━━━━━━━━━━━━━━━━━━"
                         send_wx(msg)
                         state.setdefault("alerted", {}).setdefault(key, []).append("buy_narrow")
                         save_state(state)
-                        return
             
-            # 信号3: 转涨信号（从跌转涨）
+            # 信号3: 转涨信号
             if change_pct > 0 and "buy_turn_up" not in state["alerted"].get(key, []):
                 has_drop = any(k.startswith("pct_-") for k in state["alerted"].get(key, []))
                 if has_drop:
                     msg = f"📈 【{stock['name']} 转涨！】\n"
                     msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
-                    msg += f"止跌反弹，可考虑入场"
+                    msg += f"止跌反弹，可考虑入场\n"
+                    msg += f"━━━━━━━━━━━━━━━━━━━━"
                     send_wx(msg)
                     state.setdefault("alerted", {}).setdefault(key, []).append("buy_turn_up")
                     save_state(state)
-                    return
-    
-    save_state(state)
 
 if __name__ == "__main__":
     main()
