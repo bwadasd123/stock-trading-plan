@@ -33,9 +33,9 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 40000  # 充值至4万
+TOTAL_CAPITAL = 72566  # 原32566 + 充值40000
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
-SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额8000元
+SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14513元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
 
 # 交易日列表（用于计算持仓天数，排除周末和节假日）
