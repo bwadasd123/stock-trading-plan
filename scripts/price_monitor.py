@@ -126,6 +126,17 @@ STOCKS = [
         "tp_pct": 15,
         "sl_pct": 8,
         "type": "持仓"
+    },
+    {
+        "code": "1.600114",
+        "name": "东睦股份",
+        "ts_code": "600114",
+        "cost": None,
+        "shares": 0,
+        "buy_date": None,
+        "tp_pct": 15,
+        "sl_pct": 8,
+        "type": "观察"
     }
 ]
 
@@ -187,7 +198,7 @@ def get_price(code):
 def get_rsi(code):
     """获取RSI"""
     try:
-        secid_map = {"0.002167": "0.002167", "0.159599": "0.159599", "1.513100": "1.513100", "0.002141": "0.002141", "0.002245": "0.002245", "0.000920": "0.000920"}
+        secid_map = {"0.002167": "0.002167", "0.159599": "0.159599", "1.513100": "1.513100", "0.002141": "0.002141", "0.002245": "0.002245", "0.000920": "0.000920", "1.600114": "1.600114"}
         secid = secid_map.get(code, code)
         url = f"http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={secid}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&end=20500101&lmt=30"
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
