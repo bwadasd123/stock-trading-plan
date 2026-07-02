@@ -131,12 +131,12 @@ STOCKS = [
         "code": "1.600114",
         "name": "东睦股份",
         "ts_code": "600114",
-        "cost": None,
-        "shares": 0,
-        "buy_date": None,
+        "cost": 36.565,
+        "shares": 200,
+        "buy_date": "2026-07-02",
         "tp_pct": 15,
         "sl_pct": 8,
-        "type": "观察"
+        "type": "持仓"
     }
 ]
 
