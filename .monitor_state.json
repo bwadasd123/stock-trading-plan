@@ -1,1 +1,136 @@
-{"alerted": {"002167": ["pct_-3", "cost_-8.0", "pct_-4", "pct_-5", "pct_-6", "cost_-11.0", "cost_-11.5", "pct_-7", "pct_-8", "cost_-12.5", "cost_-12.0", "cost_-13.0", "cost_-10.5", "cost_-10.0", "cost_-9.5", "cost_-8.5", "cost_-9.0", "pct_-1", "cost_-6.5", "pct_2", "pct_4", "cost_-2.0", "pct_7", "pct_6", "pct_8", "cost_1.0", "cost_2.5", "pct_9", "pct_10", "cost_4.0", "limit_up", "buy_turn_up"], "159599": ["pct_0", "pct_-2", "pct_-1", "buy_turn_up", "pct_1", "pct_2", "pct_3"], "513100": ["pct_2", "pct_1"], "002141": ["pct_1", "pct_2", "cost_0.5", "pct_0", "cost_-1.5", "cost_-0.5", "cost_0.0", "pct_4", "cost_3.0", "cost_2.0", "pct_5", "cost_3.5", "pct_6", "cost_4.0", "cost_4.5", "cost_2.5", "pct_3", "cost_1.5", "cost_1.0"], "002245": ["pct_0", "cost_-0.5", "cost_-1.0", "pct_-1"]}, "open_sent": false, "close_sent": false, "last_hourly": "13:00", "today": "2026-06-30", "prev_limit_up": {"159599": false, "002167": true, "513100": false, "002141": false, "002245": false}, "prev_limit_down": {"159599": false, "002167": false, "513100": false, "002141": false, "002245": false}}
+{
+  "alerted": {
+    "159599": [
+      "near_sl",
+      "pct_-5",
+      "cost_-3.5",
+      "pct_-6",
+      "cost_-4.5",
+      "sl",
+      "pct_-7",
+      "cost_-6.5",
+      "cost_-5.0",
+      "cost_-4.0",
+      "cost_-5.5",
+      "cost_-6.0",
+      "pct_-4",
+      "cost_-3.0",
+      "cost_-2.5",
+      "pct_-3",
+      "cost_-2.0"
+    ],
+    "513100": [
+      "pct_-1"
+    ],
+    "000920": [
+      "pct_-3",
+      "cost_-3.0",
+      "near_sl",
+      "pct_-6",
+      "cost_-6.0",
+      "pct_-8",
+      "cost_-8.0",
+      "cost_-5.0",
+      "pct_-5",
+      "cost_-4.5",
+      "pct_-4",
+      "cost_-3.5",
+      "cost_-2.5",
+      "cost_-4.0",
+      "pct_-2",
+      "cost_-2.0",
+      "cost_-1.5",
+      "cost_-1.0",
+      "pct_-1",
+      "cost_-0.5"
+    ],
+    "002245": [
+      "pct_-1",
+      "cost_1.5",
+      "pct_-2",
+      "cost_0.5",
+      "cost_1.0",
+      "pct_-3",
+      "cost_0.0",
+      "cost_2.0",
+      "pct_0",
+      "cost_3.0",
+      "cost_3.5",
+      "pct_1",
+      "cost_4.0",
+      "cost_4.5",
+      "pct_3",
+      "cost_6.0",
+      "pct_2",
+      "cost_5.0",
+      "cost_5.5",
+      "pct_4",
+      "cost_7.0",
+      "near_tp",
+      "pct_6",
+      "cost_9.0",
+      "cost_9.5",
+      "pct_7",
+      "cost_10.0",
+      "pct_8",
+      "pct_9",
+      "cost_8.5",
+      "pct_5",
+      "cost_8.0",
+      "cost_7.5"
+    ],
+    "002141": [
+      "sl",
+      "pct_-6",
+      "cost_-12.5",
+      "pct_-5",
+      "cost_-12.0",
+      "pct_-4",
+      "cost_-11.0",
+      "cost_-11.5",
+      "pct_-3",
+      "cost_-10.0",
+      "pct_-2",
+      "cost_-9.5",
+      "cost_-9.0",
+      "cost_-10.5",
+      "pct_-1",
+      "cost_-8.5",
+      "near_sl",
+      "pct_0",
+      "cost_-8.0"
+    ],
+    "600114": [
+      "pct_3",
+      "pct_4",
+      "pct_6",
+      "pct_5"
+    ]
+  },
+  "open_sent": true,
+  "close_sent": false,
+  "last_hourly": "13:00",
+  "today": "2026-07-02",
+  "prev_limit_up": {
+    "513100": false,
+    "000920": false,
+    "002245": false,
+    "159599": false,
+    "002141": false,
+    "600114": false
+  },
+  "prev_limit_down": {
+    "513100": false,
+    "000920": false,
+    "002245": false,
+    "159599": false,
+    "002141": false,
+    "600114": false
+  },
+  "market_warned": false,
+  "pending_trades": [
+    {
+      "msg": "🟢 【芯片ETF 159599 补仓确认】\n\n💰 补仓价 3.749 × 500股\n📦 总持仓 2100股\n📊 新成本 3.879\n\n🟢 原持仓 1600股@3.919\n🟢 新补仓 500股@3.749\n━━━━━━━━━━━━\n🎯 止盈 +10% → 4.267\n🚨 止损 -5% → 3.685\n💼 仓位 7873元(10.8%)"
+    }
+  ]
+}
