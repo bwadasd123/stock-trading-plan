@@ -33,9 +33,9 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 32566  # 3万本金 + 盈利2566 (+247东方锆业涨停清仓)
+TOTAL_CAPITAL = 40000  # 充值至4万
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
-SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额6000元
+SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额8000元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
 
 # 交易日列表（用于计算持仓天数，排除周末和节假日）
@@ -73,26 +73,15 @@ def get_trading_days(buy_date_str):
 # buy_date: 买入日期（仅持仓类型需要）
 STOCKS = [
     {
-        "code": "0.002167",
-        "name": "东方锆业",
-        "ts_code": "002167",
-        "cost": None,  # 06-30 涨停清仓 +247元
-        "shares": 0,
-        "buy_date": None,
-        "tp_pct": 15,
-        "sl_pct": 8,
-        "type": "观察"
-    },
-    {
         "code": "0.159599",
         "name": "芯片ETF",
         "ts_code": "159599",
-        "cost": None,  # 未买入
-        "shares": 0,
-        "buy_date": None,
+        "cost": 3.919,  # 7/1 买入1600股
+        "shares": 1600,
+        "buy_date": "2026-07-01",
         "tp_pct": 10,
         "sl_pct": 5,
-        "type": "观察"
+        "type": "持仓"
     },
     {
         "code": "1.513100",
@@ -104,6 +93,17 @@ STOCKS = [
         "tp_pct": 10,
         "sl_pct": 5,
         "type": "观察"
+    },
+    {
+        "code": "0.000920",
+        "name": "沃顿科技",
+        "ts_code": "000920",
+        "cost": 15.213,  # 7/1 买入400股
+        "shares": 400,
+        "buy_date": "2026-07-01",
+        "tp_pct": 15,
+        "sl_pct": 8,
+        "type": "持仓"
     },
     {
         "code": "0.002245",
@@ -187,7 +187,7 @@ def get_price(code):
 def get_rsi(code):
     """获取RSI"""
     try:
-        secid_map = {"0.002167": "0.002167", "0.159599": "0.159599", "1.513100": "1.513100", "0.002141": "0.002141"}
+        secid_map = {"0.002167": "0.002167", "0.159599": "0.159599", "1.513100": "1.513100", "0.002141": "0.002141", "0.002245": "0.002245", "0.000920": "0.000920"}
         secid = secid_map.get(code, code)
         url = f"http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={secid}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&end=20500101&lmt=30"
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
