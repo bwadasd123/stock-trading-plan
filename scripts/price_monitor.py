@@ -14,7 +14,7 @@ import os
 # ========== 加载.env文件 ==========
 def load_env():
     env_paths = [
-        os.path.expanduser("~/.hermes/profiles/eastmoney-bot/.env"),
+        "/home/jmy/.hermes/profiles/eastmoney-bot/.env",
         ".env",
     ]
     for env_path in env_paths:
@@ -24,7 +24,7 @@ def load_env():
                     line = line.strip()
                     if line and not line.startswith('#') and '=' in line:
                         key, value = line.split('=', 1)
-                        os.environ.setdefault(key.strip(), value.strip())
+                        os.environ[key.strip()] = value.strip()
             break
 
 load_env()
@@ -33,7 +33,7 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 72566  # 原32566 + 充值40000
+TOTAL_CAPITAL = 73353  # 原72566 + 蔚蓝锂芯盈利787
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
 SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14513元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
@@ -109,12 +109,12 @@ STOCKS = [
         "code": "0.002245",
         "name": "蔚蓝锂芯",
         "ts_code": "002245",
-        "cost": 18.483,
-        "shares": 400,
-        "buy_date": "2026-06-30",
+        "cost": None,  # 7/3清仓@20.450 +787元
+        "shares": 0,
+        "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
-        "type": "持仓"
+        "type": "观察"
     },
     {
         "code": "0.002141",
@@ -137,6 +137,50 @@ STOCKS = [
         "tp_pct": 15,
         "sl_pct": 8,
         "type": "持仓"
+    },
+    {
+        "code": "0.002559",
+        "name": "亚威股份",
+        "ts_code": "002559",
+        "cost": None,
+        "shares": 0,
+        "buy_date": None,
+        "tp_pct": 15,
+        "sl_pct": 8,
+        "type": "观察"
+    },
+    {
+        "code": "1.603928",
+        "name": "兴业股份",
+        "ts_code": "603928",
+        "cost": None,
+        "shares": 0,
+        "buy_date": None,
+        "tp_pct": 15,
+        "sl_pct": 8,
+        "type": "观察"
+    },
+    {
+        "code": "1.600857",
+        "name": "宁波中百",
+        "ts_code": "600857",
+        "cost": None,
+        "shares": 0,
+        "buy_date": None,
+        "tp_pct": 15,
+        "sl_pct": 8,
+        "type": "观察"
+    },
+    {
+        "code": "1.603078",
+        "name": "江化微",
+        "ts_code": "603078",
+        "cost": None,
+        "shares": 0,
+        "buy_date": None,
+        "tp_pct": 15,
+        "sl_pct": 8,
+        "type": "观察"
     }
 ]
 
@@ -198,7 +242,7 @@ def get_price(code):
 def get_rsi(code):
     """获取RSI"""
     try:
-        secid_map = {"0.002167": "0.002167", "0.159599": "0.159599", "1.513100": "1.513100", "0.002141": "0.002141", "0.002245": "0.002245", "0.000920": "0.000920", "1.600114": "1.600114"}
+        secid_map = {"0.002167": "0.002167", "0.159599": "0.159599", "1.513100": "1.513100", "0.002141": "0.002141", "0.002245": "0.002245", "0.000920": "0.000920", "1.600114": "1.600114", "0.002559": "0.002559", "1.603928": "1.603928", "1.600857": "1.600857", "1.603078": "1.603078"}
         secid = secid_map.get(code, code)
         url = f"http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={secid}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&end=20500101&lmt=30"
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
