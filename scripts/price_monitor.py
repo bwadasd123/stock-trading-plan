@@ -80,7 +80,7 @@ STOCKS = [
         "shares": 2600,
         "buy_date": "2026-07-01",
         "tp_pct": 10,
-        "sl_pct": 5,
+        "sl_pct": 3,  # 按新铁律ETF止损3%
         "type": "持仓"
     },
     {
