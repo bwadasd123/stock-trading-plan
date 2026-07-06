@@ -672,10 +672,15 @@ def main():
         state.setdefault("prev_limit_down", {})[key] = is_limit_down
         save_state(state)
         
-        # ========== 整数涨跌幅提醒 ==========
+        # ========== 整数涨跌幅提醒（区分涨跌方向）==========
         current_pct_int = round(change_pct)
         if -10 <= current_pct_int <= 10:
-            alert_key = f"pct_{current_pct_int}"
+            if current_pct_int > 0:
+                alert_key = f"pct_up_{current_pct_int}"
+            elif current_pct_int < 0:
+                alert_key = f"pct_down_{abs(current_pct_int)}"
+            else:
+                alert_key = "pct_0"
             if alert_key not in state["alerted"].get(key, []):
                 direction = "📈" if current_pct_int > 0 else ("📉" if current_pct_int < 0 else "➡️")
                 msg = f"{direction} 【{stock['name']} {current_pct_int:+d}%】\n"
@@ -718,7 +723,7 @@ def main():
         if not stock["cost"]:
             # 信号1: 从大跌中恢复
             if change_pct >= -2 and change_pct <= 0:
-                has_big_drop = any(k.startswith("pct_-") and int(k.split("_")[1]) <= -5 
+                has_big_drop = any(k.startswith("pct_down_") and int(k.split("_")[2]) >= 5 
                                  for k in state["alerted"].get(key, []))
                 if has_big_drop and "buy_recovery" not in state["alerted"].get(key, []):
                     msg = f"💡 【{stock['name']} 企稳信号】\n"
@@ -734,13 +739,13 @@ def main():
             
             # 信号2: 跌幅收窄
             if change_pct >= -3 and change_pct <= 0:
-                prev_pcts = [k for k in state["alerted"].get(key, []) if k.startswith("pct_-")]
+                prev_pcts = [k for k in state["alerted"].get(key, []) if k.startswith("pct_down_")]
                 if prev_pcts:
-                    min_pct = min(int(k.split("_")[1]) for k in prev_pcts)
-                    if min_pct <= -5 and "buy_narrow" not in state["alerted"].get(key, []):
+                    max_drop = max(int(k.split("_")[2]) for k in prev_pcts)
+                    if max_drop >= 5 and "buy_narrow" not in state["alerted"].get(key, []):
                         msg = f"📉➡️📈 【{stock['name']} 跌幅收窄】\n"
                         msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
-                        msg += f"从{min_pct}%收窄，关注反弹机会\n"
+                        msg += f"从-{max_drop}%收窄，关注反弹机会\\n"
                         msg += f"━━━━━━━━━━━━━━━━━━━━"
                         send_wx(msg)
                         state.setdefault("alerted", {}).setdefault(key, []).append("buy_narrow")
@@ -748,7 +753,7 @@ def main():
             
             # 信号3: 转涨信号
             if change_pct > 0 and "buy_turn_up" not in state["alerted"].get(key, []):
-                has_drop = any(k.startswith("pct_-") for k in state["alerted"].get(key, []))
+                has_drop = any(k.startswith("pct_down_") for k in state["alerted"].get(key, []))
                 if has_drop:
                     msg = f"📈 【{stock['name']} 转涨！】\n"
                     msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
