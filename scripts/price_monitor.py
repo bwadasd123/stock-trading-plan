@@ -33,7 +33,7 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 72356  # 原73353 - 沃顿科技亏损997（7/6清仓@12.72）
+TOTAL_CAPITAL = 72780  # 原72356 + 贤丰控股盈利424（7/6清仓@5.650）
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
 SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14513元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
@@ -120,12 +120,12 @@ STOCKS = [
         "code": "0.002141",
         "name": "贤丰控股",
         "ts_code": "002141",
-        "cost": 5.265,
-        "shares": 1100,
-        "buy_date": "2026-06-29",
+        "cost": None,  # 7/6 清仓@5.650涨停，盈利424元
+        "shares": 0,
+        "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
-        "type": "持仓"
+        "type": "观察"
     },
     {
         "code": "1.600114",
