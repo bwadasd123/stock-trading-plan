@@ -106,28 +106,6 @@ STOCKS = [
         "type": "观察"
     },
     {
-        "code": "0.002245",
-        "name": "蔚蓝锂芯",
-        "ts_code": "002245",
-        "cost": None,  # 7/3清仓@20.450 +787元
-        "shares": 0,
-        "buy_date": None,
-        "tp_pct": 15,
-        "sl_pct": 8,
-        "type": "观察"
-    },
-    {
-        "code": "0.002141",
-        "name": "贤丰控股",
-        "ts_code": "002141",
-        "cost": None,  # 7/6 清仓@5.650涨停，盈利424元
-        "shares": 0,
-        "buy_date": None,
-        "tp_pct": 15,
-        "sl_pct": 8,
-        "type": "观察"
-    },
-    {
         "code": "1.600114",
         "name": "东睦股份",
         "ts_code": "600114",
@@ -171,17 +149,6 @@ STOCKS = [
         "sl_pct": 8,
         "type": "观察"
     },
-    {
-        "code": "1.603078",
-        "name": "江化微",
-        "ts_code": "603078",
-        "cost": None,
-        "shares": 0,
-        "buy_date": None,
-        "tp_pct": 15,
-        "sl_pct": 8,
-        "type": "观察"
-    }
 ]
 
 STATE_FILE = "/home/jmy/.hermes/profiles/eastmoney-bot/.monitor_state.json"
@@ -242,7 +209,7 @@ def get_price(code):
 def get_rsi(code):
     """获取RSI"""
     try:
-        secid_map = {"0.002167": "0.002167", "0.159599": "0.159599", "1.513100": "1.513100", "0.002141": "0.002141", "0.002245": "0.002245", "0.000920": "0.000920", "1.600114": "1.600114", "0.002559": "0.002559", "1.603928": "1.603928", "1.600857": "1.600857", "1.603078": "1.603078"}
+        secid_map = {"0.002167": "0.002167", "0.159599": "0.159599", "1.513100": "1.513100", "0.000920": "0.000920", "1.600114": "1.600114", "0.002559": "0.002559", "1.603928": "1.603928", "1.600857": "1.600857"}
         secid = secid_map.get(code, code)
         url = f"http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={secid}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&end=20500101&lmt=30"
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -286,6 +253,62 @@ def is_trading_time():
     t = now.time()
     return (datetime.time(9, 25) <= t <= datetime.time(11, 31)) or \
            (datetime.time(12, 55) <= t <= datetime.time(15, 1))
+
+
+def check_monitor_changes(state):
+    """检测监控列表变更（新增/移除），首次运行不报警"""
+    # 构建当前监控快照：{ts_code: (name, type)}
+    current = {}
+    for s in STOCKS:
+        current[s["ts_code"]] = (s["name"], s["type"])
+    
+    snapshot = state.get("stocks_snapshot", {})
+    
+    # 首次运行：保存快照，不报警
+    if not snapshot:
+        state["stocks_snapshot"] = current
+        save_state(state)
+        return None
+    
+    # 对比差异
+    added = {}    # 新增的
+    removed = {}  # 移除的
+    changed = {}  # type变化的（观察→持仓 或 持仓→观察）
+    
+    for code, (name, stype) in current.items():
+        if code not in snapshot:
+            added[code] = (name, stype)
+        elif snapshot[code] != (name, stype):
+            old_name, old_type = snapshot[code]
+            if old_type != stype:
+                changed[code] = (name, old_type, stype)
+    
+    for code, (name, stype) in snapshot.items():
+        if code not in current:
+            removed[code] = (name, stype)
+    
+    # 更新快照
+    state["stocks_snapshot"] = current
+    save_state(state)
+    
+    # 有变更才推送
+    if not added and not removed and not changed:
+        return None
+    
+    msg = "📋 【监控列表变更】\n\n"
+    
+    for code, (name, stype) in added.items():
+        emoji = "🔴" if stype == "持仓" else "🟡"
+        msg += f"  ➕ {emoji} 新增{stype}: {name} ({code})\n"
+    
+    for code, (name, stype) in removed.items():
+        emoji = "🔴" if stype == "持仓" else "🟡"
+        msg += f"  ➖ {emoji} 移除{stype}: {name} ({code})\n"
+    
+    for code, (name, old_type, new_type) in changed.items():
+        msg += f"  🔄 {name} ({code}): {old_type} → {new_type}\n"
+    
+    return msg
 
 def format_stock(stock, price_data):
     price = price_data["price"]
@@ -447,6 +470,11 @@ def main():
             send_wx(trade["msg"])
         state["pending_trades"] = []
         save_state(state)
+    
+    # ======== 监控列表变更检测 ========
+    change_msg = check_monitor_changes(state)
+    if change_msg:
+        send_wx(change_msg)
     
     # 收盘播报
     if now.hour == 15 and now.minute == 0 and not state.get("close_sent"):
