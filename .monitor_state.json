@@ -1,1 +1,153 @@
-{"alerted": {"159599": ["sl", "pct_down_2", "cost_-8.0", "pct_down_3", "pct_down_1", "cost_-7.0", "cost_-7.5", "cost_-6.5", "pct_0", "cost_-6.0", "cost_-5.5", "pct_up_1", "cost_-5.0", "cost_-4.5", "pct_up_2", "cost_-4.0"], "513100": ["pct_0", "pct_down_1", "buy_turn_up"], "000920": ["pct_0", "pct_up_1", "pct_down_1", "pct_down_2", "buy_turn_up"], "600114": ["pct_0", "cost_-1.0", "pct_up_1", "cost_0.0", "cost_-0.5", "cost_0.5", "cost_-1.5", "pct_down_1", "cost_-2.0", "cost_-2.5", "pct_down_2", "cost_-3.0", "cost_-3.5", "pct_down_3"], "002559": ["pct_down_2", "pct_down_1", "pct_0", "buy_turn_up", "pct_up_1", "pct_up_3", "pct_up_4", "pct_up_2"], "603928": ["pct_down_9", "pct_down_10", "pct_down_6", "pct_down_7", "pct_down_4", "pct_down_5", "pct_down_2", "buy_recovery", "buy_narrow", "pct_down_3"], "600857": ["pct_down_2", "pct_down_1", "pct_down_3", "pct_down_4", "pct_down_5", "pct_down_6", "pct_down_7", "pct_down_8"], "518880": ["pct_down_1", "cost_0.0"]}, "open_sent": true, "close_sent": false, "last_hourly": "13:00", "today": "2026-07-07", "prev_limit_up": {"513100": false, "000920": false, "600114": false, "002559": false, "603928": false, "600857": false, "159599": false, "518880": false}, "prev_limit_down": {"513100": false, "000920": false, "600114": false, "002559": false, "603928": false, "600857": false, "159599": false, "518880": false}, "market_warned": false, "pending_trades": [], "stocks_snapshot": {"159599": ["芯片ETF", "持仓"], "518880": ["黄金ETF", "持仓"], "513100": ["纳指ETF", "观察"], "000920": ["沃顿科技", "观察"], "600114": ["东睦股份", "持仓"], "002559": ["亚威股份", "观察"], "603928": ["兴业股份", "观察"], "600857": ["宁波中百", "观察"]}}
+{
+  "alerted": {
+    "159599": [
+      "sl",
+      "pct_down_2",
+      "cost_-8.0",
+      "pct_down_3",
+      "pct_down_1",
+      "cost_-7.0",
+      "cost_-7.5",
+      "cost_-6.5",
+      "pct_0",
+      "cost_-6.0",
+      "cost_-5.5",
+      "pct_up_1",
+      "cost_-5.0",
+      "cost_-4.5",
+      "pct_up_2",
+      "cost_-4.0"
+    ],
+    "513100": [
+      "pct_0",
+      "pct_down_1",
+      "buy_turn_up"
+    ],
+    "000920": [
+      "pct_0",
+      "pct_up_1",
+      "pct_down_1",
+      "pct_down_2",
+      "buy_turn_up"
+    ],
+    "600114": [
+      "pct_0",
+      "cost_-1.0",
+      "pct_up_1",
+      "cost_0.0",
+      "cost_-0.5",
+      "cost_0.5",
+      "cost_-1.5",
+      "pct_down_1",
+      "cost_-2.0",
+      "cost_-2.5",
+      "pct_down_2",
+      "cost_-3.0",
+      "cost_-3.5",
+      "pct_down_3",
+      "cost_-4.0"
+    ],
+    "002559": [
+      "pct_down_2",
+      "pct_down_1",
+      "pct_0",
+      "buy_turn_up",
+      "pct_up_1",
+      "pct_up_3",
+      "pct_up_4",
+      "pct_up_2"
+    ],
+    "603928": [
+      "pct_down_9",
+      "pct_down_10",
+      "pct_down_6",
+      "pct_down_7",
+      "pct_down_4",
+      "pct_down_5",
+      "pct_down_2",
+      "buy_recovery",
+      "buy_narrow",
+      "pct_down_3"
+    ],
+    "600857": [
+      "pct_down_2",
+      "pct_down_1",
+      "pct_down_3",
+      "pct_down_4",
+      "pct_down_5",
+      "pct_down_6",
+      "pct_down_7",
+      "pct_down_8"
+    ],
+    "518880": [
+      "pct_down_1",
+      "cost_0.0",
+      "pct_0",
+      "near_sl"
+    ]
+  },
+  "open_sent": true,
+  "close_sent": false,
+  "last_hourly": "13:00",
+  "today": "2026-07-07",
+  "prev_limit_up": {
+    "513100": false,
+    "000920": false,
+    "600114": false,
+    "002559": false,
+    "603928": false,
+    "600857": false,
+    "159599": false,
+    "518880": false
+  },
+  "prev_limit_down": {
+    "513100": false,
+    "000920": false,
+    "600114": false,
+    "002559": false,
+    "603928": false,
+    "600857": false,
+    "159599": false,
+    "518880": false
+  },
+  "market_warned": false,
+  "pending_trades": [
+    {
+      "msg": "🟢 【东睦股份 600114 补仓确认】\n\n💰 补仓 35.07 × 100股 = 3,507元\n📊 原持仓 200股@36.565 → 300股@36.067\n🎯 新止盈 41.477（+15%）\n🚨 新止损 33.182（-8%）\n━━━━━━━━━━━━━━━━━━━━\n💼 东睦仓位 14.9%（10,820/72,780）"
+    }
+  ],
+  "stocks_snapshot": {
+    "159599": [
+      "芯片ETF",
+      "持仓"
+    ],
+    "518880": [
+      "黄金ETF",
+      "持仓"
+    ],
+    "513100": [
+      "纳指ETF",
+      "观察"
+    ],
+    "000920": [
+      "沃顿科技",
+      "观察"
+    ],
+    "600114": [
+      "东睦股份",
+      "持仓"
+    ],
+    "002559": [
+      "亚威股份",
+      "观察"
+    ],
+    "603928": [
+      "兴业股份",
+      "观察"
+    ],
+    "600857": [
+      "宁波中百",
+      "观察"
+    ]
+  }
+}
