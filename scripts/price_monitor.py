@@ -82,6 +82,7 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 10,
         "sl_pct": 3,  # 按新铁律ETF止损3%
+        "target_buy": 3.67,  # 回本买入价（2600股）
         "type": "观察"
     },
     {
@@ -127,6 +128,7 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
+        "target_buy": 30.37,  # 回本买入价（300股）
         "type": "观察"
     },
     {
@@ -772,6 +774,20 @@ def main():
                 state["alerted"][key].append("hold_days")
                 save_state(state)
         
+        # ========== 观察股票目标买入价提醒 ==========
+        if not stock["cost"]:
+            target = stock.get("target_buy")
+            if target and price <= target and f"target_buy" not in state["alerted"].get(key, []):
+                msg = f"🎯 【{stock['name']} 到达目标买入价！】\n"
+                msg += f"现价 {price:.3f} ≤ 目标 {target:.2f}\n"
+                suggested_shares = int(SINGLE_POSITION_AMOUNT / price / 100) * 100
+                if suggested_shares > 0:
+                    msg += f"建议仓位: {suggested_shares}股({suggested_shares * price:.0f}元)\n"
+                msg += f"━━━━━━━━━━━━━━━━━━━━"
+                send_wx(msg)
+                state.setdefault("alerted", {}).setdefault(key, []).append("target_buy")
+                save_state(state)
+
         # ========== 观察股票买入信号 ==========
         if not stock["cost"]:
             # 信号1: 从大跌中恢复
