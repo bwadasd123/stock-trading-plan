@@ -33,7 +33,7 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 72452  # 原72630 - 芯片ETF清仓实际亏-328.19（含手续费）
+TOTAL_CAPITAL = 71598  # 原72452 - 东睦股份清仓300@33.22(-854)
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
 SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14513元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
@@ -118,15 +118,16 @@ STOCKS = [
         "type": "观察"
     },
     {
+        # 2026-07-08 清仓@33.22 (-854)
         "code": "1.600114",
         "name": "东睦股份",
         "ts_code": "600114",
-        "cost": 36.067,  # 7/2 200@36.565 + 7/7 100@35.07
-        "shares": 300,
-        "buy_date": "2026-07-02",
+        "cost": None,
+        "shares": 0,
+        "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
-        "type": "持仓"
+        "type": "观察"
     },
     {
         "code": "0.002559",
