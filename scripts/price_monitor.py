@@ -73,17 +73,17 @@ def get_trading_days(buy_date_str):
 # buy_date: 买入日期（仅持仓类型需要）
 STOCKS = [
     {
-        # 2026-07-08 全清（累计亏-328.19含手续费）
+        # 2026-07-08 T接回2600@3.619（卖均3.694，T赚0.075/股）
         "code": "0.159599",
         "name": "芯片ETF",
         "ts_code": "159599",
-        "cost": None,
-        "shares": 0,
-        "buy_date": None,
+        "cost": 3.619,
+        "shares": 2600,
+        "buy_date": "2026-07-08",
         "tp_pct": 10,
-        "sl_pct": 3,  # 按新铁律ETF止损3%
-        "target_buy": 3.67,  # 回本买入价（2600股）
-        "type": "观察"
+        "sl_pct": 3,
+        "target_buy": None,
+        "type": "持仓"
     },
     {
         "code": "1.518880",
