@@ -33,7 +33,7 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 72630  # 原72698 - 芯片ETF减仓600@3.684(-68)
+TOTAL_CAPITAL = 72450  # 原72630 - 芯片ETF清仓2000@3.707(-180)，累计-330
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
 SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14513元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
@@ -73,15 +73,16 @@ def get_trading_days(buy_date_str):
 # buy_date: 买入日期（仅持仓类型需要）
 STOCKS = [
     {
+        # 2026-07-08 全清@3.707（累计卖1200@3.660/3.684 + 2000@3.707 = 3200股，亏-330）
         "code": "0.159599",
         "name": "芯片ETF",
         "ts_code": "159599",
-        "cost": 3.797,  # 7/1 1600@3.919 + 7/2 1000补 + 7/7 600@3.600 - 7/8卖600@3.660+600@3.684(-150)
-        "shares": 2000,
-        "buy_date": "2026-07-01",
+        "cost": None,
+        "shares": 0,
+        "buy_date": None,
         "tp_pct": 10,
         "sl_pct": 3,  # 按新铁律ETF止损3%
-        "type": "持仓"
+        "type": "观察"
     },
     {
         "code": "1.518880",
