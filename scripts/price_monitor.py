@@ -33,7 +33,7 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 72780  # 原72356 + 贤丰控股盈利424（7/6清仓@5.650）
+TOTAL_CAPITAL = 72698  # 原72780 - 芯片ETF减仓600@3.660(-82)
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
 SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14513元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
@@ -76,8 +76,8 @@ STOCKS = [
         "code": "0.159599",
         "name": "芯片ETF",
         "ts_code": "159599",
-        "cost": 3.797,  # 7/1 1600@3.919 + 7/2 500@3.749 + 500@3.685 + 7/7 600@3.600
-        "shares": 3200,
+        "cost": 3.797,  # 7/1 1600@3.919 + 7/2 500@3.749 + 500@3.685 + 7/7 600@3.600 - 7/8卖600@3.660(-82)
+        "shares": 2600,
         "buy_date": "2026-07-01",
         "tp_pct": 10,
         "sl_pct": 3,  # 按新铁律ETF止损3%

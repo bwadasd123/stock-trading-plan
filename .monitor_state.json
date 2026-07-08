@@ -1,95 +1,60 @@
 {
   "alerted": {
     "159599": [
-      "pct_down_2",
-      "cost_-8.0",
-      "pct_down_3",
-      "pct_down_1",
-      "cost_-7.0",
-      "cost_-7.5",
-      "cost_-6.5",
+      "sl",
       "pct_0",
-      "cost_-6.0",
-      "cost_-5.5",
-      "pct_up_1",
       "cost_-5.0",
-      "cost_-4.5",
-      "pct_up_2",
+      "hold_days",
+      "pct_up_1",
+      "cost_-3.5",
       "cost_-4.0"
+    ],
+    "518880": [
+      "near_sl",
+      "pct_down_1",
+      "cost_-0.5"
     ],
     "513100": [
       "pct_0",
-      "pct_down_1",
-      "buy_turn_up"
+      "pct_down_1"
     ],
     "000920": [
       "pct_0",
-      "pct_up_1",
-      "pct_down_1",
-      "pct_down_2",
-      "buy_turn_up",
-      "pct_down_3"
+      "pct_down_1"
     ],
     "600114": [
-      "pct_0",
-      "cost_-1.0",
       "pct_up_1",
-      "cost_0.0",
-      "cost_-0.5",
-      "cost_0.5",
-      "cost_-1.5",
-      "pct_down_1",
       "cost_-2.0",
-      "cost_-2.5",
-      "pct_down_2",
+      "pct_0",
       "cost_-3.0",
-      "cost_-3.5",
-      "pct_down_3",
-      "cost_-4.0"
+      "pct_down_1",
+      "cost_-3.5"
     ],
     "002559": [
       "pct_down_2",
       "pct_down_1",
-      "pct_0",
-      "buy_turn_up",
-      "pct_up_1",
-      "pct_up_3",
-      "pct_up_4",
-      "pct_up_2"
-    ],
-    "603928": [
-      "pct_down_9",
-      "pct_down_10",
-      "pct_down_6",
-      "pct_down_7",
-      "pct_down_4",
-      "pct_down_5",
-      "pct_down_2",
-      "buy_recovery",
-      "buy_narrow",
       "pct_down_3"
     ],
-    "600857": [
-      "pct_down_2",
-      "pct_down_1",
-      "pct_down_3",
-      "pct_down_4",
-      "pct_down_5",
-      "pct_down_6",
-      "pct_down_7",
-      "pct_down_8"
-    ],
-    "518880": [
-      "pct_down_1",
-      "cost_0.0",
+    "603928": [
       "pct_0",
-      "near_sl"
+      "pct_up_4",
+      "pct_up_3",
+      "pct_up_6"
+    ],
+    "600857": [
+      "pct_0",
+      "pct_down_1"
+    ],
+    "603903": [
+      "pct_up_1",
+      "pct_down_1",
+      "buy_turn_up"
     ]
   },
   "open_sent": true,
   "close_sent": false,
-  "last_hourly": "14:00",
-  "today": "2026-07-07",
+  "last_hourly": null,
+  "today": "2026-07-08",
   "prev_limit_up": {
     "513100": false,
     "000920": false,
@@ -98,7 +63,8 @@
     "603928": false,
     "600857": false,
     "159599": false,
-    "518880": false
+    "518880": false,
+    "603903": false
   },
   "prev_limit_down": {
     "513100": false,
@@ -108,12 +74,13 @@
     "603928": false,
     "600857": false,
     "159599": false,
-    "518880": false
+    "518880": false,
+    "603903": false
   },
   "market_warned": false,
   "pending_trades": [
     {
-      "msg": "🟢 【芯片ETF 159599 补仓确认】\n\n💰 补仓 3.600 × 600股 = 2,160元\n📊 原 2600股@3.842 → 3200股@3.797\n🎯 新止盈 4.177（+10%）\n🚨 新止损 3.683（-3%）\n━━━━━━━━━━━━━━━━━━━━\n💼 芯片ETF仓位 16.7%（12,150/72,780）"
+      "msg": "🔴 【芯片ETF 减仓】\n\n💰 卖出 600股 @3.660\n📊 原持仓 3200股@3.797\n📊 剩余 2600股@3.797\n💸 盈亏 -82元\n\n━━━━━━━━━━━━━━━━━━━━\n📋 今日现价 3.651（+1.28%）\n⚠️ 仍在止损线3.683下方"
     }
   ],
   "stocks_snapshot": {
@@ -147,6 +114,10 @@
     ],
     "600857": [
       "宁波中百",
+      "观察"
+    ],
+    "603903": [
+      "中持股份",
       "观察"
     ]
   }
