@@ -33,9 +33,9 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 71598  # 原72452 - 东睦股份清仓300@33.22(-854)
+TOTAL_CAPITAL = 72939  # 原71639 + 沃顿科技清仓+1300
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
-SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14513元
+SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14588元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
 
 # 交易日列表（用于计算持仓天数，排除周末和节假日）
@@ -73,17 +73,17 @@ def get_trading_days(buy_date_str):
 # buy_date: 买入日期（仅持仓类型需要）
 STOCKS = [
     {
-        # 2026-07-08 T接回2600@3.619（卖均3.694，T赚0.075/股）
+        # 2026-07-09 清仓: 减半1800@3.707(±0) + 清仓1800@3.730(+41) = +41
         "code": "0.159599",
         "name": "芯片ETF",
         "ts_code": "159599",
-        "cost": 3.707,  # 2600@3.746 + 1000@3.606(7/8加仓) = 3600@3.707
-        "shares": 3600,
-        "buy_date": "2026-07-08",
+        "cost": None,
+        "shares": 0,
+        "buy_date": None,
         "tp_pct": 10,
         "sl_pct": 3,
         "target_buy": None,
-        "type": "持仓"
+        "type": "观察"
     },
     {
         "code": "1.518880",
@@ -108,14 +108,16 @@ STOCKS = [
         "type": "观察"
     },
     {
+        # 2026-07-10 清仓: 1000@12.75(成本11.45) = +1300
         "code": "0.000920",
         "name": "沃顿科技",
         "ts_code": "000920",
-        "cost": None,  # 7/6 清仓@12.72，亏损997元
+        "cost": None,
         "shares": 0,
         "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
+        "target_buy": None,
         "type": "观察"
     },
     {
@@ -140,6 +142,7 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
+        "target_buy": 11.00,  # 7/9挂条件单1200股
         "type": "观察"
     },
     {

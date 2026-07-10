@@ -1,123 +1,85 @@
 {
   "alerted": {
+    "159599": [
+      "pct_up_2",
+      "pct_up_1"
+    ],
     "518880": [
       "near_sl",
-      "pct_down_1",
-      "cost_-0.5",
       "pct_0",
+      "cost_-0.5",
       "cost_0.0"
     ],
     "513100": [
-      "pct_0",
-      "pct_down_1"
+      "pct_up_1"
     ],
-    "000920": [
-      "pct_0",
-      "pct_down_1",
-      "pct_down_2",
-      "pct_down_3",
-      "pct_down_4",
-      "pct_down_5"
+    "600114": [
+      "pct_0"
     ],
     "002559": [
-      "pct_down_2",
-      "pct_down_1",
-      "pct_down_3",
-      "pct_down_4",
-      "pct_down_5",
-      "pct_down_6",
-      "pct_down_7",
-      "pct_down_9",
-      "pct_down_8"
+      "pct_up_5",
+      "pct_up_10",
+      "pct_up_8",
+      "pct_up_9"
     ],
     "603928": [
-      "pct_0",
-      "pct_up_4",
+      "pct_down_4",
+      "pct_down_3",
       "pct_up_3",
-      "pct_up_6",
-      "pct_up_5",
-      "pct_up_2",
-      "pct_up_8",
-      "pct_up_9",
-      "pct_up_10"
+      "buy_turn_up",
+      "pct_0"
     ],
     "600857": [
       "pct_0",
-      "pct_down_1",
-      "buy_turn_up",
-      "pct_down_2",
-      "pct_down_3",
-      "pct_up_1"
+      "pct_up_1",
+      "pct_up_2",
+      "pct_up_4",
+      "pct_up_7",
+      "pct_up_6"
     ],
     "603903": [
-      "pct_up_1",
-      "pct_down_1",
-      "buy_turn_up",
       "pct_down_2",
-      "pct_down_4",
-      "pct_down_3",
-      "pct_down_5",
-      "buy_narrow",
-      "buy_recovery",
       "pct_0",
-      "pct_up_2",
-      "pct_up_3",
-      "pct_up_5",
-      "pct_up_4"
-    ],
-    "159599": [
-      "pct_up_3",
-      "pct_up_4",
-      "pct_up_2",
-      "pct_up_1",
-      "target_buy",
-      "pct_0",
-      "sl",
-      "cost_-4.0",
-      "cost_-3.5"
-    ],
-    "600114": [
-      "pct_down_5",
-      "pct_down_6",
-      "pct_down_7"
+      "pct_down_1",
+      "pct_down_3"
     ]
   },
   "open_sent": true,
   "close_sent": false,
-  "last_hourly": "14:00",
-  "today": "2026-07-08",
+  "last_hourly": null,
+  "today": "2026-07-10",
   "prev_limit_up": {
-    "513100": false,
-    "000920": false,
-    "002559": false,
-    "603928": true,
-    "600857": false,
-    "518880": false,
-    "603903": false,
     "159599": false,
-    "600114": false
-  },
-  "prev_limit_down": {
     "513100": false,
     "000920": false,
+    "600114": false,
     "002559": false,
     "603928": false,
     "600857": false,
-    "518880": false,
     "603903": false,
+    "518880": false
+  },
+  "prev_limit_down": {
     "159599": false,
-    "600114": false
+    "513100": false,
+    "000920": false,
+    "600114": false,
+    "002559": false,
+    "603928": false,
+    "600857": false,
+    "603903": false,
+    "518880": false
   },
   "market_warned": false,
   "pending_trades": [
     {
-      "msg": "🟢 【芯片ETF 159599 加仓】\n\n💰 加仓 1000股 @3.606\n📊 持仓 2600→3600股\n📊 成本 3.746→3.707\n\n━━━━━━━━━━━━━━━━━━━━\n📋 新持仓\n   成本 3.707 | 仓位 18.1%\n   止盈 4.078 | 止损 3.596\n\n💡 反弹到3.71就回本"
+      "msg": "🔴 【沃顿科技 000920 清仓】\n\n💰 卖出价 12.750 × 1000股\n   成交金额 12,750元\n\n📊 盈亏明细\n   成本价 11.450\n   盈利 +1,300元（+11.35%）\n   持仓 1天（7/9买入→7/10卖出）\n\n━━━━━━━━━━━━━━━━━━━━\n📋 交易记录\n   累计盈利: +2,898元\n   总资金: 72,939元\n━━━━━━━━━━━━━━━━━━━━\n🔁 下次建仓参考价: ≤12.75"
     }
   ],
   "stocks_snapshot": {
     "159599": [
       "芯片ETF",
-      "持仓"
+      "观察"
     ],
     "518880": [
       "黄金ETF",
