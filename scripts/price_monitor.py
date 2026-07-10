@@ -33,7 +33,7 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 72939  # 原71639 + 沃顿科技清仓+1300
+TOTAL_CAPITAL = 73147  # 盘后实际余额（含手续费清算）
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
 SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14588元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
