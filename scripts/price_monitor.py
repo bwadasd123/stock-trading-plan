@@ -33,9 +33,9 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 73147  # 盘后实际余额（含手续费清算）
+TOTAL_CAPITAL = 72874  # 7/14 黄金ETF清仓亏273后
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
-SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14588元
+SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14575元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
 
 # 交易日列表（用于计算持仓天数，排除周末和节假日）
@@ -82,19 +82,23 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 10,
         "sl_pct": 3,
-        "target_buy": None,
+        "target_buy": 3.62,  # 7/13 MA20支撑
+        "target_shares": 2600,
         "type": "观察"
     },
     {
+        # 2026-07-14 清仓: 1000@8.312（止损），买入8.585，亏-273（-3.18%）
         "code": "1.518880",
         "name": "黄金ETF",
         "ts_code": "518880",
-        "cost": 8.585,
-        "shares": 1000,
-        "buy_date": "2026-07-07",
+        "cost": None,
+        "shares": 0,
+        "buy_date": None,
         "tp_pct": 10,
         "sl_pct": 3,  # ETF止损3%
-        "type": "持仓"
+        "target_buy": None,
+        "target_shares": None,
+        "type": "观察"
     },
     {
         "code": "1.513100",
@@ -117,7 +121,7 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
-        "target_buy": None,
+        "target_buy": None,  # 7/13 反弹+20%偏高，取消等回调
         "type": "观察"
     },
     {
@@ -130,20 +134,21 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
-        "target_buy": 30.37,  # 回本买入价（300股）
+        "target_buy": 30.58,  # 7/13 布林下轨+RSI24.6超卖
+        "target_shares": 300,
         "type": "观察"
     },
     {
         "code": "0.002559",
         "name": "亚威股份",
         "ts_code": "002559",
-        "cost": None,
-        "shares": 0,
-        "buy_date": None,
+        "cost": 10.99,  # 7/13 买入1200股@10.99
+        "shares": 1200,
+        "buy_date": "2026-07-13",
         "tp_pct": 15,
         "sl_pct": 8,
-        "target_buy": 11.00,  # 7/9挂条件单1200股
-        "type": "观察"
+        "target_buy": None,
+        "type": "持仓"
     },
     {
         "code": "1.603928",
@@ -783,9 +788,11 @@ def main():
             if target and price <= target and f"target_buy" not in state["alerted"].get(key, []):
                 msg = f"🎯 【{stock['name']} 到达目标买入价！】\n"
                 msg += f"现价 {price:.3f} ≤ 目标 {target:.2f}\n"
-                suggested_shares = int(SINGLE_POSITION_AMOUNT / price / 100) * 100
-                if suggested_shares > 0:
-                    msg += f"建议仓位: {suggested_shares}股({suggested_shares * price:.0f}元)\n"
+                target_shares = stock.get("target_shares", 0)
+                if not target_shares:
+                    target_shares = int(SINGLE_POSITION_AMOUNT / price / 100) * 100
+                if target_shares > 0:
+                    msg += f"建议仓位: {target_shares}股({target_shares * price:.0f}元)\n"
                 msg += f"━━━━━━━━━━━━━━━━━━━━"
                 send_wx(msg)
                 state.setdefault("alerted", {}).setdefault(key, []).append("target_buy")
