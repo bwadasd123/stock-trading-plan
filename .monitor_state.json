@@ -2,7 +2,6 @@
   "alerted": {
     "159599": [
       "pct_down_1",
-      "target_buy",
       "pct_up_1",
       "buy_turn_up",
       "pct_0",
@@ -10,22 +9,9 @@
       "pct_down_3",
       "pct_down_4",
       "pct_down_5",
-      "pct_down_6"
-    ],
-    "513100": [
-      "pct_down_1",
-      "pct_0"
-    ],
-    "000920": [
-      "pct_down_2",
-      "pct_down_4",
-      "pct_down_5",
-      "pct_down_3",
-      "buy_narrow",
+      "pct_down_6",
       "buy_recovery",
-      "pct_down_1",
-      "pct_0",
-      "buy_turn_up"
+      "buy_narrow"
     ],
     "600114": [
       "pct_0",
@@ -35,7 +21,20 @@
       "buy_turn_up",
       "pct_up_1",
       "cost_0.0",
-      "cost_-0.5"
+      "cost_-0.5",
+      "cost_-1.0",
+      "cost_1.0",
+      "cost_1.5",
+      "pct_up_2",
+      "cost_3.5",
+      "cost_4.0",
+      "pct_up_3",
+      "cost_4.5",
+      "cost_5.0",
+      "pct_up_4",
+      "cost_6.0",
+      "cost_5.5",
+      "cost_3.0"
     ],
     "002559": [
       "pct_0",
@@ -52,57 +51,36 @@
       "cost_-5.0",
       "near_sl",
       "cost_-5.5",
-      "pct_down_4"
-    ],
-    "600857": [
-      "pct_up_3",
       "pct_down_4",
-      "pct_down_2",
-      "pct_up_1",
-      "buy_turn_up",
-      "pct_0",
-      "pct_down_6",
-      "pct_down_7",
-      "pct_down_5",
-      "pct_down_3",
-      "pct_down_8",
-      "pct_down_9"
-    ],
-    "603903": [
-      "pct_0",
-      "pct_up_1",
-      "pct_up_2",
-      "pct_up_4",
-      "pct_up_3",
-      "pct_down_1"
+      "cost_-6.0"
     ],
     "518880": [
-      "pct_down_1"
+      "pct_down_1",
+      "pct_0"
+    ],
+    "600888": [
+      "pct_up_7",
+      "pct_up_6",
+      "pct_up_5"
     ]
   },
   "open_sent": true,
-  "close_sent": false,
-  "last_hourly": "11:00",
+  "close_sent": true,
+  "last_hourly": "14:00",
   "today": "2026-07-14",
   "prev_limit_up": {
     "159599": false,
-    "513100": false,
-    "000920": false,
     "600114": false,
     "002559": false,
-    "600857": false,
-    "603903": false,
-    "518880": false
+    "518880": false,
+    "600888": false
   },
   "prev_limit_down": {
     "159599": false,
-    "513100": false,
-    "000920": false,
     "600114": false,
     "002559": false,
-    "600857": false,
-    "603903": false,
-    "518880": false
+    "518880": false,
+    "600888": false
   },
   "market_warned": false,
   "pending_trades": [],
@@ -115,14 +93,6 @@
       "黄金ETF",
       "观察"
     ],
-    "513100": [
-      "纳指ETF",
-      "观察"
-    ],
-    "000920": [
-      "沃顿科技",
-      "观察"
-    ],
     "600114": [
       "东睦股份",
       "持仓"
@@ -131,12 +101,8 @@
       "亚威股份",
       "持仓"
     ],
-    "600857": [
-      "宁波中百",
-      "观察"
-    ],
-    "603903": [
-      "中持股份",
+    "600888": [
+      "新疆众和",
       "观察"
     ]
   }
