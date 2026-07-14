@@ -126,17 +126,18 @@ STOCKS = [
     },
     {
         # 2026-07-08 清仓@33.22 (-854)
+        # 2026-07-14 买入300@30.58（RSI 19.4极度超卖+布林下轨）
         "code": "1.600114",
         "name": "东睦股份",
         "ts_code": "600114",
-        "cost": None,
-        "shares": 0,
-        "buy_date": None,
+        "cost": 30.58,
+        "shares": 300,
+        "buy_date": "2026-07-14",
         "tp_pct": 15,
         "sl_pct": 8,
-        "target_buy": 30.58,  # 7/13 布林下轨+RSI24.6超卖
-        "target_shares": 300,
-        "type": "观察"
+        "target_buy": None,
+        "target_shares": None,
+        "type": "持仓"
     },
     {
         "code": "0.002559",
