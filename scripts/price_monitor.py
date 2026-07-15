@@ -116,19 +116,6 @@ STOCKS = [
         "type": "持仓"
     },
     {
-        # 2026-07-13 买入1200@10.99 → 7/15 清仓: 600@11.32 + 600@11.14 = +288
-        "code": "0.002559",
-        "name": "亚威股份",
-        "ts_code": "002559",
-        "cost": None,
-        "shares": 0,
-        "buy_date": None,
-        "tp_pct": 15,
-        "sl_pct": 8,
-        "target_buy": None,
-        "type": "观察"
-    },
-    {
         "code": "1.600888",
         "name": "新疆众和",
         "ts_code": "600888",
@@ -199,7 +186,7 @@ def get_price(code):
 def get_rsi(code):
     """获取RSI"""
     try:
-        secid_map = {"0.002167": "0.002167", "0.159599": "0.159599", "1.518880": "1.518880", "1.600114": "1.600114", "0.002559": "0.002559", "1.600888": "1.600888"}
+        secid_map = {"0.002167": "0.002167", "0.159599": "0.159599", "1.518880": "1.518880", "1.600114": "1.600114", "1.600888": "1.600888"}
         secid = secid_map.get(code, code)
         url = f"http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={secid}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&end=20500101&lmt=30"
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
