@@ -82,7 +82,7 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 10,
         "sl_pct": 3,
-        "target_buy": 3.30,  # 7/14 下调，等企稳
+        "target_buy": 3.33,  # 7/15 从3.30上调（整数关口难触发，加0.03缓冲）
         "target_shares": 2600,
         "type": "观察"
     },
