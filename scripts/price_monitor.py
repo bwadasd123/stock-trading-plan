@@ -33,7 +33,7 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 72874  # 7/14 黄金ETF清仓亏273后
+TOTAL_CAPITAL = 73072  # 7/15 亚威减半600@11.32(+198)
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
 SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14575元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
@@ -119,8 +119,8 @@ STOCKS = [
         "code": "0.002559",
         "name": "亚威股份",
         "ts_code": "002559",
-        "cost": 10.99,  # 7/13 买入1200股@10.99
-        "shares": 1200,
+        "cost": 10.99,  # 7/13 买入1200@10.99, 7/15 减半600@11.32(+198)
+        "shares": 600,
         "buy_date": "2026-07-13",
         "tp_pct": 15,
         "sl_pct": 8,
