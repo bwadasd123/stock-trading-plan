@@ -33,7 +33,7 @@ load_env()
 WX_WEBHOOK = os.environ.get("WX_WEBHOOK", "")
 
 # ========== 仓位管理配置 ==========
-TOTAL_CAPITAL = 73162  # 7/15 亚威清仓+288（600@11.32+600@11.14）
+TOTAL_CAPITAL = 73390  # 7/15 东睦清仓330@31.27(+228)，空仓
 SINGLE_POSITION_PCT = 20  # 单只股票仓位比例20%
 SINGLE_POSITION_AMOUNT = TOTAL_CAPITAL * SINGLE_POSITION_PCT / 100  # 单只股票金额14575元
 MAX_HOLD_DAYS = 5  # 持仓天数上限
@@ -102,18 +102,18 @@ STOCKS = [
     },
     {
         # 2026-07-08 清仓@33.22 (-854)
-        # 2026-07-14 买入300@30.58（RSI 19.4极度超卖+布林下轨）
+        # 2026-07-14 买入300@30.58 → 7/15 清仓330@31.27(+228)，净亏626
         "code": "1.600114",
         "name": "东睦股份",
         "ts_code": "600114",
-        "cost": 30.58,
-        "shares": 300,
-        "buy_date": "2026-07-14",
+        "cost": None,
+        "shares": 0,
+        "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
         "target_buy": None,
         "target_shares": None,
-        "type": "持仓"
+        "type": "观察"
     },
     {
         "code": "1.600888",
