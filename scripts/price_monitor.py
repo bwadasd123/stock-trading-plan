@@ -125,6 +125,8 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
+        "target_buy": 10.45,
+        "target_shares": 1000,
         "type": "观察"
     },
 ]
