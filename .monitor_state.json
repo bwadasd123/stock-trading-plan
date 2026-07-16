@@ -1,1 +1,62 @@
-{"alerted": {"159599": ["pct_down_5", "pct_down_4", "pct_down_3", "buy_narrow", "pct_down_2", "buy_recovery", "pct_down_1", "pct_0", "buy_turn_up", "target_buy_10:38", "target_buy_10:48", "target_buy_10:53", "target_buy_11:01", "target_buy_11:06", "target_buy_11:11", "target_buy_11:16", "target_buy_11:21"], "518880": ["pct_0"], "600888": ["pct_down_1", "pct_down_2", "pct_0", "buy_turn_up", "pct_up_1"], "600114": ["pct_down_2", "cost_0.0"]}, "open_sent": true, "close_sent": false, "last_hourly": "11:00", "today": "2026-07-16", "prev_limit_up": {"159599": false, "518880": false, "600114": false, "600888": false}, "prev_limit_down": {"159599": false, "518880": false, "600114": false, "600888": false}, "market_warned": false, "pending_trades": [], "stocks_snapshot": {"159599": ["芯片ETF", "观察"], "518880": ["黄金ETF", "观察"], "600114": ["东睦股份", "持仓"], "600888": ["新疆众和", "观察"]}}
+{
+  "alerted": {
+    "518880": [
+      "pct_0"
+    ],
+    "600888": [
+      "pct_down_1",
+      "pct_down_2",
+      "pct_0",
+      "buy_turn_up",
+      "pct_up_1",
+      "pct_down_3"
+    ],
+    "600114": [
+      "pct_down_2",
+      "cost_0.0",
+      "pct_down_3",
+      "cost_0.5",
+      "cost_-0.5"
+    ]
+  },
+  "open_sent": true,
+  "close_sent": false,
+  "last_hourly": "13:00",
+  "today": "2026-07-16",
+  "prev_limit_up": {
+    "159599": false,
+    "518880": false,
+    "600114": false,
+    "600888": false
+  },
+  "prev_limit_down": {
+    "159599": false,
+    "518880": false,
+    "600114": false,
+    "600888": false
+  },
+  "market_warned": false,
+  "pending_trades": [
+    {
+      "msg": "🟢 【芯片ETF 买入确认】\n\n💰 买入价 3.237 × 2600股 = 8,416元\n📅 买入日期: 2026-07-16（周四）\n📋 T+1: 明天周五即可卖出\n\n🎯 止盈 3.561 (+10%)  |  🚨 止损 3.140 (-3%)\n\n━━━━━━━━━━━━━━━━━━━━\n💼 总仓位: 东睦12,160 + 芯片8,416 = 20,576元 (28.0%)\n🔴 铁律④: 已满2只，不能再买！\n📊 剩余: 52,814元"
+    }
+  ],
+  "stocks_snapshot": {
+    "159599": [
+      "芯片ETF",
+      "持仓"
+    ],
+    "518880": [
+      "黄金ETF",
+      "观察"
+    ],
+    "600114": [
+      "东睦股份",
+      "持仓"
+    ],
+    "600888": [
+      "新疆众和",
+      "观察"
+    ]
+  }
+}

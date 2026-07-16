@@ -74,17 +74,18 @@ def get_trading_days(buy_date_str):
 STOCKS = [
     {
         # 2026-07-09 清仓: 减半1800@3.707(±0) + 清仓1800@3.730(+41) = +41
+        # 2026-07-16 买入2600@3.237 → 持仓中
         "code": "0.159599",
         "name": "芯片ETF",
         "ts_code": "159599",
-        "cost": None,
-        "shares": 0,
-        "buy_date": None,
+        "cost": 3.237,
+        "shares": 2600,
+        "buy_date": "2026-07-16",
         "tp_pct": 10,
         "sl_pct": 3,
-        "target_buy": 3.33,  # 7/15 从3.30上调（整数关口难触发，加0.03缓冲）
-        "target_shares": 2600,
-        "type": "观察"
+        "target_buy": None,
+        "target_shares": None,
+        "type": "持仓"
     },
     {
         # 2026-07-14 清仓: 1000@8.312（止损），买入8.585，亏-273（-3.18%）
