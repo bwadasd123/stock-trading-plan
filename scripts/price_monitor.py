@@ -131,6 +131,12 @@ STOCKS = [
 
 STATE_FILE = "/home/jmy/.hermes/profiles/eastmoney-bot/.monitor_state.json"
 
+# 历史累计亏损（用于计算回本价）
+LOSS_HISTORY = {
+    "600114": {"loss": 626, "name": "东睦股份"},  # 7/8亏854 + 7/15赚228 = 净亏626
+    "518880": {"loss": 273, "name": "黄金ETF"},    # 7/14 止损亏273
+}
+
 # ========== 核心函数 ==========
 
 def send_wx(msg):
@@ -220,6 +226,66 @@ def get_rsi(code):
             return 100
         rs = avg_gain / avg_loss
         return 100 - (100 / (1 + rs))
+    except:
+        return None
+
+def get_kline_analysis(code):
+    """获取K线技术分析：RSI + MA + 近期高低点"""
+    try:
+        secid_map = {"0.002167": "0.002167", "0.159599": "0.159599", "1.518880": "1.518880", "1.600114": "1.600114", "1.600888": "1.600888"}
+        secid = secid_map.get(code, code)
+        url = f"http://push2his.eastmoney.com/api/qt/stock/kline/get?secid={secid}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&end=20500101&lmt=30"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+        
+        klines = data.get("data", {}).get("klines", [])
+        if len(klines) < 15:
+            return None
+        
+        closes = [float(k.split(",")[2]) for k in klines]
+        highs = [float(k.split(",")[3]) for k in klines]
+        lows = [float(k.split(",")[4]) for k in klines]
+        
+        n = len(closes)
+        result = {}
+        
+        # RSI
+        deltas = [closes[i] - closes[i-1] for i in range(1, n)]
+        period = 14
+        if len(deltas) >= period:
+            gains = [d if d > 0 else 0 for d in deltas]
+            losses = [-d if d < 0 else 0 for d in deltas]
+            avg_gain = sum(gains[:period]) / period
+            avg_loss = sum(losses[:period]) / period
+            for i in range(period, len(deltas)):
+                avg_gain = (avg_gain * (period - 1) + gains[i]) / period
+                avg_loss = (avg_loss * (period - 1) + losses[i]) / period
+            if avg_loss > 0:
+                result["rsi"] = 100 - (100 / (1 + avg_gain / avg_loss))
+            else:
+                result["rsi"] = 100
+        else:
+            result["rsi"] = None
+        
+        # MA
+        if n >= 5:
+            result["ma5"] = sum(closes[-5:]) / 5
+        if n >= 10:
+            result["ma10"] = sum(closes[-10:]) / 10
+        if n >= 20:
+            result["ma20"] = sum(closes[-20:]) / 20
+        
+        # 近期高低点
+        result["low_10d"] = min(lows[-10:])
+        result["high_10d"] = max(highs[-10:])
+        result["low_20d"] = min(lows[-20:]) if n >= 20 else result.get("low_10d")
+        
+        # 周涨跌（5个交易日）
+        if n >= 6:
+            result["week_chg"] = (closes[-1] / closes[-6] - 1) * 100
+        
+        return result
     except:
         return None
 
@@ -725,11 +791,10 @@ def main():
                 state["alerted"][key].append("hold_days")
                 save_state(state)
         
-        # ========== 观察股票目标买入价提醒（每30分钟重复推送）==========
+        # ========== 观察股票目标买入价提醒（每30分钟重复推送，含完整分析）==========
         if not stock["cost"]:
             target = stock.get("target_buy")
             if target and price <= target:
-                # 查找上次target_buy提醒时间，30分钟后再推
                 existing = [a for a in state["alerted"].get(key, []) if a.startswith("target_buy_")]
                 should_alert = False
                 if not existing:
@@ -745,14 +810,80 @@ def main():
                         should_alert = True
                 
                 if should_alert:
-                    msg = f"🎯 【{stock['name']} 到达目标买入价！】\n"
-                    msg += f"现价 {price:.3f} ≤ 目标 {target:.2f}\n"
+                    # 获取技术分析数据
+                    tech = get_kline_analysis(stock["code"])
+                    rsi = tech.get("rsi") if tech else None
+                    ma5 = tech.get("ma5") if tech else None
+                    ma10 = tech.get("ma10") if tech else None
+                    ma20 = tech.get("ma20") if tech else None
+                    low_10d = tech.get("low_10d") if tech else None
+                    high_10d = tech.get("high_10d") if tech else None
+                    week_chg = tech.get("week_chg") if tech else None
+                    
                     target_shares = stock.get("target_shares", 0)
                     if not target_shares:
                         target_shares = int(SINGLE_POSITION_AMOUNT / price / 100) * 100
-                    if target_shares > 0:
-                        msg += f"建议仓位: {target_shares}股({target_shares * price:.0f}元)\n"
-                    msg += f"━━━━━━━━━━━━━━━━━━━━"
+                    position_amount = target_shares * price
+                    
+                    # 构建消息
+                    msg = f"🎯 【{stock['name']} 触发买入信号！】\n\n"
+                    msg += f"💰 现价 {price:.3f}  ≤  目标 {target:.2f}\n"
+                    msg += f"   今日 {change_pct:+.2f}%  |  最高 {price_data['high']:.3f}  最低 {price_data['low']:.3f}\n\n"
+                    
+                    # 技术面
+                    msg += "📈 技术面\n"
+                    if rsi is not None:
+                        rsi_label = "🔴极度超卖" if rsi < 30 else ("🟡偏低" if rsi < 40 else ("✅正常" if rsi < 70 else "⚠️偏高"))
+                        msg += f"   RSI(14) = {rsi:.1f}  {rsi_label}\n"
+                    if ma5 and ma10 and ma20:
+                        msg += f"   MA5={ma5:.3f}  MA10={ma10:.3f}  MA20={ma20:.3f}\n"
+                        dist_ma20 = (price / ma20 - 1) * 100
+                        msg += f"   距MA20: {dist_ma20:+.1f}%\n"
+                    if low_10d is not None and high_10d is not None:
+                        msg += f"   10日区间: {low_10d:.3f} ~ {high_10d:.3f}\n"
+                    if week_chg is not None:
+                        msg += f"   近5日: {week_chg:+.1f}%\n"
+                    
+                    msg += "\n💵 买入计划\n"
+                    msg += f"   仓位: {target_shares}股 × {price:.3f} = {position_amount:.0f}元\n"
+                    
+                    # 止损止盈
+                    tp_pct = stock.get("tp_pct", 15)
+                    sl_pct = stock.get("sl_pct", 8)
+                    tp_price = price * (1 + tp_pct / 100)
+                    sl_price = price * (1 - sl_pct / 100)
+                    msg += f"   止盈: {tp_price:.3f} (+{tp_pct}%)  |  止损: {sl_price:.3f} (-{sl_pct}%)\n"
+                    
+                    # 回本价（如有历史亏损）
+                    loss_info = LOSS_HISTORY.get(key)
+                    if loss_info and target_shares > 0:
+                        breakeven = price + loss_info["loss"] / target_shares
+                        be_pct = (breakeven / price - 1) * 100
+                        msg += f"   🔁 回本价: {breakeven:.2f} (需涨{be_pct:.1f}%，累计亏{loss_info['loss']}元)\n"
+                    
+                    # T+1判断
+                    weekday = now.weekday()
+                    weekday_names = ["周一","周二","周三","周四","周五","周六","周日"]
+                    if weekday == 4:  # 周五
+                        msg += f"\n⚠️ T+1: 今天是周五，买入后下周一才能卖出（锁仓3天），注意周末风险！\n"
+                    elif weekday < 4:  # 周一~周四
+                        next_day = weekday_names[weekday + 1]
+                        msg += f"\n📅 T+1: 今天{weekday_names[weekday]}，{next_day}即可卖出\n"
+                    
+                    # 买入理由总结
+                    reasons = []
+                    if rsi is not None and rsi < 30:
+                        reasons.append("RSI极度超卖")
+                    if ma20 and price < ma20:
+                        dist = (1 - price / ma20) * 100
+                        if dist > 10:
+                            reasons.append(f"跌破MA20达{dist:.0f}%")
+                    if week_chg is not None and week_chg < -5:
+                        reasons.append(f"近5日跌{abs(week_chg):.0f}%")
+                    if reasons:
+                        msg += f"\n💡 买入理由: {' + '.join(reasons)}，技术性反弹概率大\n"
+                    
+                    msg += "━━━━━━━━━━━━━━━━━━━━"
                     send_wx(msg)
                     time_key = f"target_buy_{now.hour:02d}:{now.minute:02d}"
                     state.setdefault("alerted", {}).setdefault(key, []).append(time_key)
