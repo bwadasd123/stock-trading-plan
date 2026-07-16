@@ -96,13 +96,14 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 10,
         "sl_pct": 3,  # ETF止损3%
-        "target_buy": None,
-        "target_shares": None,
+        "target_buy": 8.25,
+        "target_shares": 1000,
         "type": "观察"
     },
     {
         # 2026-07-08 清仓@33.22 (-854)
         # 2026-07-14 买入300@30.58 → 7/15 清仓330@31.27(+228)，净亏626
+        # 回本价: 30.50+626/400=32.06（需涨5.1%）
         "code": "1.600114",
         "name": "东睦股份",
         "ts_code": "600114",
@@ -111,8 +112,8 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
-        "target_buy": None,
-        "target_shares": None,
+        "target_buy": 30.50,
+        "target_shares": 400,
         "type": "观察"
     },
     {
