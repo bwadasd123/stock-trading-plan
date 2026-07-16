@@ -121,14 +121,14 @@ STOCKS = [
         "code": "1.600888",
         "name": "新疆众和",
         "ts_code": "600888",
-        "cost": None,
-        "shares": 0,
-        "buy_date": None,
+        "cost": 10.44,
+        "shares": 1000,
+        "buy_date": "2026-07-16",
         "tp_pct": 15,
         "sl_pct": 8,
-        "target_buy": 10.45,
-        "target_shares": 1000,
-        "type": "观察"
+        "target_buy": None,
+        "target_shares": None,
+        "type": "持仓"
     },
 ]
 
