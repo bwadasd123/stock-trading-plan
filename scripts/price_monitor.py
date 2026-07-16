@@ -793,7 +793,7 @@ def main():
                 state["alerted"][key].append("hold_days")
                 save_state(state)
         
-        # ========== 观察股票目标买入价提醒（每30分钟重复推送，含完整分析）==========
+        # ========== 观察股票目标买入价提醒（首次立即推送，之后每5分钟重复）==========
         if not stock["cost"]:
             target = stock.get("target_buy")
             if target and price <= target:
@@ -806,7 +806,7 @@ def main():
                         last_time = existing[-1].replace("target_buy_", "")
                         last_h, last_m = map(int, last_time.split(":"))
                         minutes_passed = (now.hour - last_h) * 60 + (now.minute - last_m)
-                        if minutes_passed >= 30:
+                        if minutes_passed >= 5:
                             should_alert = True
                     except:
                         should_alert = True
