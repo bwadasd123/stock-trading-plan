@@ -725,21 +725,38 @@ def main():
                 state["alerted"][key].append("hold_days")
                 save_state(state)
         
-        # ========== 观察股票目标买入价提醒 ==========
+        # ========== 观察股票目标买入价提醒（每30分钟重复推送）==========
         if not stock["cost"]:
             target = stock.get("target_buy")
-            if target and price <= target and f"target_buy" not in state["alerted"].get(key, []):
-                msg = f"🎯 【{stock['name']} 到达目标买入价！】\n"
-                msg += f"现价 {price:.3f} ≤ 目标 {target:.2f}\n"
-                target_shares = stock.get("target_shares", 0)
-                if not target_shares:
-                    target_shares = int(SINGLE_POSITION_AMOUNT / price / 100) * 100
-                if target_shares > 0:
-                    msg += f"建议仓位: {target_shares}股({target_shares * price:.0f}元)\n"
-                msg += f"━━━━━━━━━━━━━━━━━━━━"
-                send_wx(msg)
-                state.setdefault("alerted", {}).setdefault(key, []).append("target_buy")
-                save_state(state)
+            if target and price <= target:
+                # 查找上次target_buy提醒时间，30分钟后再推
+                existing = [a for a in state["alerted"].get(key, []) if a.startswith("target_buy_")]
+                should_alert = False
+                if not existing:
+                    should_alert = True
+                else:
+                    try:
+                        last_time = existing[-1].replace("target_buy_", "")
+                        last_h, last_m = map(int, last_time.split(":"))
+                        minutes_passed = (now.hour - last_h) * 60 + (now.minute - last_m)
+                        if minutes_passed >= 30:
+                            should_alert = True
+                    except:
+                        should_alert = True
+                
+                if should_alert:
+                    msg = f"🎯 【{stock['name']} 到达目标买入价！】\n"
+                    msg += f"现价 {price:.3f} ≤ 目标 {target:.2f}\n"
+                    target_shares = stock.get("target_shares", 0)
+                    if not target_shares:
+                        target_shares = int(SINGLE_POSITION_AMOUNT / price / 100) * 100
+                    if target_shares > 0:
+                        msg += f"建议仓位: {target_shares}股({target_shares * price:.0f}元)\n"
+                    msg += f"━━━━━━━━━━━━━━━━━━━━"
+                    send_wx(msg)
+                    time_key = f"target_buy_{now.hour:02d}:{now.minute:02d}"
+                    state.setdefault("alerted", {}).setdefault(key, []).append(time_key)
+                    save_state(state)
 
         # ========== 观察股票买入信号 ==========
         if not stock["cost"]:
