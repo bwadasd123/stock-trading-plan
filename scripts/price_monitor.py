@@ -762,17 +762,21 @@ def main():
         state.setdefault("prev_limit_down", {})[key] = is_limit_down
         save_state(state)
         
-        # ========== 整数涨跌幅提醒（穿越即推，离开再回来也推）==========
+        # ========== 整数涨跌幅提醒（穿越即推，离开再回来也推，中间整数不漏）==========
         current_pct_int = round(change_pct)
         prev_key = f"prev_pct_{key}"
         prev_pct = state.get(prev_key)
         
         if prev_pct is not None and -10 <= current_pct_int <= 10 and current_pct_int != prev_pct:
-            direction = "📈" if current_pct_int > 0 else ("📉" if current_pct_int < 0 else "➡️")
-            msg = f"{direction} 【{stock['name']} {current_pct_int:+d}%】\n"
-            msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
-            msg += f"━━━━━━━━━━━━━━━━━━━━"
-            send_wx(msg)
+            # 遍历prev到current之间所有整数（升序或降序）
+            step = 1 if current_pct_int > prev_pct else -1
+            for p in range(prev_pct + step, current_pct_int + step, step):
+                if -10 <= p <= 10:
+                    direction = "📈" if p > 0 else ("📉" if p < 0 else "➡️")
+                    msg = f"{direction} 【{stock['name']} {p:+d}%】\n"
+                    msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
+                    msg += f"━━━━━━━━━━━━━━━━━━━━"
+                    send_wx(msg)
             state[prev_key] = current_pct_int
             save_state(state)
         elif prev_pct is None and -10 <= current_pct_int <= 10:
