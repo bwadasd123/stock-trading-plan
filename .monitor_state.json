@@ -1,1 +1,128 @@
-{"alerted": {"518880": ["pct_0"], "600114": ["pct_down_2", "cost_0.0", "pct_down_3", "cost_0.5", "cost_-0.5", "cost_-1.0", "pct_down_4", "cost_-1.5", "cost_-2.0", "pct_down_5", "cost_-2.5", "cost_-3.0", "pct_down_6", "cost_-3.5"], "159599": ["pct_down_3", "cost_0.5", "cost_1.0", "pct_down_4", "cost_0.0", "near_sl", "cost_-0.5", "cost_-1.0", "pct_down_5", "cost_-1.5", "cost_-2.0", "pct_down_6", "cost_-2.5", "pct_down_7", "cost_-3.0"], "600888": ["pct_down_3", "cost_0.0", "cost_0.5", "pct_down_4", "cost_-0.5", "cost_-1.0"]}, "open_sent": true, "close_sent": true, "last_hourly": "14:00", "today": "2026-07-16", "prev_limit_up": {"159599": false, "518880": false, "600114": false, "600888": false}, "prev_limit_down": {"159599": false, "518880": false, "600114": false, "600888": false}, "market_warned": false, "pending_trades": [], "stocks_snapshot": {"159599": ["芯片ETF", "持仓"], "518880": ["黄金ETF", "观察"], "600114": ["东睦股份", "持仓"], "600888": ["新疆众和", "持仓"]}}
+{
+  "alerted": {
+    "159599": [
+      "sl",
+      "pct_up_2",
+      "cost_-6.5",
+      "cost_-7.0",
+      "cost_-7.5",
+      "pct_up_1",
+      "cost_-8.0",
+      "pct_up_3",
+      "cost_-6.0",
+      "pct_up_4",
+      "cost_-5.5",
+      "cost_-8.5",
+      "pct_0",
+      "cost_-9.0",
+      "cost_-9.5",
+      "pct_down_1",
+      "cost_-10.0",
+      "pct_down_2",
+      "cost_-10.5",
+      "cost_-11.0",
+      "cost_-11.5"
+    ],
+    "518880": [
+      "pct_0"
+    ],
+    "600114": [
+      "pct_up_3",
+      "cost_-5.0",
+      "pct_up_1",
+      "cost_-7.0",
+      "cost_-6.5",
+      "pct_up_2",
+      "cost_-6.0",
+      "cost_-5.5",
+      "pct_0",
+      "cost_-7.5",
+      "cost_-8.0",
+      "pct_down_1",
+      "cost_-8.5",
+      "pct_down_2",
+      "cost_-9.0",
+      "cost_-9.5",
+      "cost_-10.0",
+      "pct_down_3",
+      "cost_-10.5",
+      "cost_-11.0",
+      "pct_down_4",
+      "cost_-11.5",
+      "pct_down_5"
+    ],
+    "600888": [
+      "pct_up_3",
+      "cost_-5.0",
+      "near_sl",
+      "pct_0",
+      "cost_-7.0",
+      "pct_up_1",
+      "cost_-6.5",
+      "cost_-7.5",
+      "pct_down_1",
+      "cost_-8.0",
+      "sl",
+      "pct_down_2",
+      "cost_-9.0",
+      "cost_-8.5",
+      "cost_-9.5",
+      "pct_down_3",
+      "cost_-10.0",
+      "cost_-10.5",
+      "pct_down_4",
+      "cost_-11.0",
+      "cost_-11.5",
+      "pct_down_5",
+      "cost_-12.0"
+    ]
+  },
+  "open_sent": true,
+  "close_sent": false,
+  "last_hourly": "10:00",
+  "today": "2026-07-20",
+  "prev_limit_up": {
+    "518880": false,
+    "600114": false,
+    "600888": false,
+    "159599": false
+  },
+  "prev_limit_down": {
+    "518880": false,
+    "600114": false,
+    "600888": false,
+    "159599": false
+  },
+  "market_warned": false,
+  "pending_trades": [
+    {
+      "msg": "🟢 【东睦股份 补仓确认】\n\n💰 补仓价 26.00 × 300股 = 7,800元\n📊 总持仓 1,000股  新成本 28.435\n   原700@29.479 + 补300@26.00\n\n🎯 止盈 32.70 (+15%) | 🚨 止损 26.16 (-8%)\n🔁 回本价 29.06 (需涨+2.2%)\n\n📅 T+1: 今天周一补仓，周二可卖"
+    }
+  ],
+  "stocks_snapshot": {
+    "159599": [
+      "芯片ETF",
+      "持仓"
+    ],
+    "518880": [
+      "黄金ETF",
+      "观察"
+    ],
+    "600114": [
+      "东睦股份",
+      "持仓"
+    ],
+    "600888": [
+      "新疆众和",
+      "持仓"
+    ]
+  },
+  "t_targets": {
+    "600114": {
+      "target": 27.74,
+      "shares": 300,
+      "cost": 28.435,
+      "note": "做T卖出：补300@26.00→卖300@27.74，T赚+522。卖旧持仓"
+    }
+  }
+}

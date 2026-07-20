@@ -74,12 +74,12 @@ def get_trading_days(buy_date_str):
 STOCKS = [
     {
         # 2026-07-09 清仓: 减半1800@3.707(±0) + 清仓1800@3.730(+41) = +41
-        # 2026-07-16 买入2600@3.237 → 持仓中
+        # 2026-07-16 买入2600@3.237 → 7/17 补200@2.974 → 2800股 加权3.218
         "code": "0.159599",
         "name": "芯片ETF",
         "ts_code": "159599",
-        "cost": 3.237,
-        "shares": 2600,
+        "cost": 3.218,
+        "shares": 2800,
         "buy_date": "2026-07-16",
         "tp_pct": 10,
         "sl_pct": 3,
@@ -104,12 +104,12 @@ STOCKS = [
     {
         # 2026-07-08 清仓@33.22 (-854)
         # 2026-07-14 买入300@30.58 → 7/15 清仓330@31.27(+228)，净亏626
-        # 2026-07-16 买入400@30.40 + 补200@29.44 → 600股 加权30.08
+        # 2026-07-16 买入400@30.40 + 补200@29.44 → 7/17 补300@27.19 → T卖200@27.85 → 700股 加权29.479
         "code": "1.600114",
         "name": "东睦股份",
         "ts_code": "600114",
-        "cost": 30.08,
-        "shares": 600,
+        "cost": 28.435,
+        "shares": 1000,
         "buy_date": "2026-07-16",
         "tp_pct": 15,
         "sl_pct": 8,
@@ -121,8 +121,8 @@ STOCKS = [
         "code": "1.600888",
         "name": "新疆众和",
         "ts_code": "600888",
-        "cost": 10.44,
-        "shares": 1000,
+        "cost": 10.297,
+        "shares": 1200,
         "buy_date": "2026-07-16",
         "tp_pct": 15,
         "sl_pct": 8,
@@ -594,7 +594,20 @@ def main():
             price_data = get_price(stock['code'])
             if price_data:
                 stock_msg, _, _ = format_stock(stock, price_data)
-                msg += stock_msg + "\n"
+                msg += stock_msg
+                # 做T目标距离
+                t_targets = state.get("t_targets", {})
+                if stock['ts_code'] in t_targets and stock.get("cost"):
+                    t = t_targets[stock['ts_code']]
+                    dist = (price_data['price'] - t['target']) / t['target'] * 100
+                    emoji = "✅" if dist >= 0 else "⏳"
+                    msg += f"🎯 做T卖出 {t['target']:.2f} {emoji}距{dist:+.1f}%  {t['shares']}股\n"
+                if stock.get("target_buy") and stock.get("cost"):
+                    tb = stock['target_buy']
+                    dist_tb = (price_data['price'] - tb) / tb * 100
+                    emoji = "🔔" if dist_tb <= 0 else "⏳"
+                    msg += f"🔻 补仓目标 {tb:.2f} {emoji}距{dist_tb:+.1f}%  {stock.get('target_shares',0)}股\n"
+                msg += "\n"
         # 添加持仓分析和建议
         msg += generate_advice()
         send_wx(msg)
@@ -794,10 +807,25 @@ def main():
                 state["alerted"][key].append("hold_days")
                 save_state(state)
         
-        # ========== 观察股票目标买入价提醒（首次立即推送，之后每5分钟重复）==========
-        if not stock["cost"]:
-            target = stock.get("target_buy")
-            if target and price <= target:
+        # ========== 做T目标价检查 ==========
+        t_targets = state.get("t_targets", {})
+        if key in t_targets and stock.get("cost"):
+            t_info = t_targets[key]
+            t_target_price = t_info["target"]
+            alert_key = f"t_sell_{t_target_price}"
+            if price >= t_target_price and alert_key not in state["alerted"].get(key, []):
+                t_shares = t_info["shares"]
+                msg = f"🎯 【{stock['name']} 做T目标到达！】\n\n"
+                msg += f"💰 现价 {price:.3f}  ≥  目标 {t_target_price:.2f}\n"
+                msg += f"📋 {t_info['note']}\n"
+                msg += f"💡 卖出旧持仓中 {t_shares} 股"
+                send_wx(msg)
+                state["alerted"][key].append(alert_key)
+                save_state(state)
+        
+        # ========== 观察/持仓股票目标买入价提醒（首次立即推送，之后每5分钟重复）==========
+        target = stock.get("target_buy")
+        if target and price <= target:
                 existing = [a for a in state["alerted"].get(key, []) if a.startswith("target_buy_")]
                 should_alert = False
                 if not existing:
