@@ -507,6 +507,8 @@ def main():
             "prev_limit_down": {},
             "market_warned": False,
             "pending_trades": state.get("pending_trades", []),  # 保留跨日未发送的交易通知
+            "t_targets": state.get("t_targets", {}),            # 保留做T目标
+            "stocks_snapshot": state.get("stocks_snapshot", {}), # 保留监控快照
         }
         save_state(state)
     
@@ -760,23 +762,23 @@ def main():
         state.setdefault("prev_limit_down", {})[key] = is_limit_down
         save_state(state)
         
-        # ========== 整数涨跌幅提醒（区分涨跌方向）==========
+        # ========== 整数涨跌幅提醒（穿越即推，离开再回来也推）==========
         current_pct_int = round(change_pct)
-        if -10 <= current_pct_int <= 10:
-            if current_pct_int > 0:
-                alert_key = f"pct_up_{current_pct_int}"
-            elif current_pct_int < 0:
-                alert_key = f"pct_down_{abs(current_pct_int)}"
-            else:
-                alert_key = "pct_0"
-            if alert_key not in state["alerted"].get(key, []):
-                direction = "📈" if current_pct_int > 0 else ("📉" if current_pct_int < 0 else "➡️")
-                msg = f"{direction} 【{stock['name']} {current_pct_int:+d}%】\n"
-                msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
-                msg += f"━━━━━━━━━━━━━━━━━━━━"
-                send_wx(msg)
-                state["alerted"][key].append(alert_key)
-                save_state(state)
+        prev_key = f"prev_pct_{key}"
+        prev_pct = state.get(prev_key)
+        
+        if prev_pct is not None and -10 <= current_pct_int <= 10 and current_pct_int != prev_pct:
+            direction = "📈" if current_pct_int > 0 else ("📉" if current_pct_int < 0 else "➡️")
+            msg = f"{direction} 【{stock['name']} {current_pct_int:+d}%】\n"
+            msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
+            msg += f"━━━━━━━━━━━━━━━━━━━━"
+            send_wx(msg)
+            state[prev_key] = current_pct_int
+            save_state(state)
+        elif prev_pct is None and -10 <= current_pct_int <= 10:
+            # 首次记录，不推送
+            state[prev_key] = current_pct_int
+            save_state(state)
         
         # ========== 成本线提醒（0.5%间隔）==========
         if stock["cost"]:
