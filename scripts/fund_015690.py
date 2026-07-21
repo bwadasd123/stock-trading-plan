@@ -23,7 +23,7 @@ TOTAL_INVEST = 22500
 FUND_SHARES = 2912.9
 COST_NAV = 7.7242
 
-# 重仓股（来自 pingzhongdata/015690.js）
+# 重仓股（来自 pingzhongdata/015690.js + 688347）
 HOLDINGS = [
     "0.300502",  # 新易盛
     "0.002384",  # 东山精密
@@ -35,8 +35,9 @@ HOLDINGS = [
     "0.002463",  # 沪电股份
     "1.600498",  # 烽火通信
     "1.688205",  # 德科立
+    "1.688347",  # 华虹公司
 ]
-STOCK_RATIO = 0.88  # 股票仓位约88%
+STOCK_RATIO = 0.88  # 股票仓位约88%（等权估算，实际权重按季报）
 
 def send_wx(msg):
     if not WX_WEBHOOK: return
