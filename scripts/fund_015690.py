@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""015690 基金估值 → 企微推送（v4: 基于持仓股实时估算）"""
+"""015690 基金估值 → 企微推送（v5: 按季报权重加权估算）"""
 import urllib.request, json, os, datetime
 
 def load_env():
@@ -23,21 +23,21 @@ TOTAL_INVEST = 22500
 FUND_SHARES = 2912.9
 COST_NAV = 7.7242
 
-# 重仓股（来自 pingzhongdata/015690.js + 688347）
-HOLDINGS = [
-    "0.300502",  # 新易盛
-    "0.002384",  # 东山精密
-    "0.002916",  # 深南电路
-    "0.300308",  # 中际旭创
-    "0.002027",  # 分众传媒
-    "1.601869",  # 长飞光纤
-    "1.688052",  # 纳芯微
-    "0.002463",  # 沪电股份
-    "1.600498",  # 烽火通信
-    "1.688205",  # 德科立
-    "1.688347",  # 华虹公司
+# 最新季报前10大重仓股（权重% → 归一化到88%总仓位）
+HOLDINGS_RAW = [
+    ("0.002384", "东山精密", 9.33),
+    ("0.300502", "新易盛", 8.06),
+    ("0.300308", "中际旭创", 6.58),
+    ("0.002916", "深南电路", 5.92),
+    ("1.688347", "华虹公司", 5.86),
+    ("0.002463", "沪电股份", 5.21),
+    ("1.603986", "兆易创新", 4.76),
+    ("0.000657", "中钨高新", 3.63),
+    ("0.002436", "兴森科技", 3.40),
+    ("0.002938", "鹏鼎控股", 2.91),
 ]
-STOCK_RATIO = 0.88  # 股票仓位约88%（等权估算，实际权重按季报）
+TOTAL_WEIGHT = sum(w for _,_,w in HOLDINGS_RAW)  # 55.66%
+STOCK_RATIO = 0.88  # 股票总仓位
 
 def send_wx(msg):
     if not WX_WEBHOOK: return
@@ -57,20 +57,19 @@ def save_state(s):
         json.dump(s, f, ensure_ascii=False, indent=2)
 
 def get_holding_prices():
-    """获取重仓股实时涨跌"""
-    secids = ",".join(HOLDINGS)
+    secids = ",".join(s for s,_,_ in HOLDINGS_RAW)
     url = f"http://push2delay.eastmoney.com/api/qt/ulist.np/get?fltt=2&fields=f2,f3,f14&secids={secids}"
     try:
         resp = urllib.request.urlopen(url, timeout=5)
-        return json.loads(resp.read()).get("data", {}).get("diff", [])
-    except: return []
+        items = json.loads(resp.read()).get("data", {}).get("diff", [])
+        # 按secid索引
+        return {i.get("f12",""): i for i in items}
+    except: return {}
 
 def get_latest_nav():
-    """获取最新确认净值"""
     url = "https://api.fund.eastmoney.com/f10/lsjz?fundCode=015690&pageIndex=1&pageSize=5"
     req = urllib.request.Request(url, headers={
-        "User-Agent": "Mozilla/5.0",
-        "Referer": "https://fund.eastmoney.com/"
+        "User-Agent": "Mozilla/5.0", "Referer": "https://fund.eastmoney.com/"
     })
     try:
         resp = urllib.request.urlopen(req, timeout=10)
@@ -79,55 +78,54 @@ def get_latest_nav():
     except: return []
 
 # 获取数据
-holdings = get_holding_prices()
+prices = get_holding_prices()
 nav_items = get_latest_nav()
-
-if not nav_items:
-    exit(0)
+if not nav_items: exit(0)
 
 now = datetime.datetime.now()
 state = load_state()
-
-# 最新净值
 latest = nav_items[0]
 dwjz = float(latest.get("DWJZ", 0))
 jzrq = latest.get("FSRQ", "N/A")
-jzzzl = float(latest.get("JZZZL", 0))
 
-# 基于持仓估算今日净值
-est_nav = dwjz
-est_chg = 0
-if holdings and len(holdings) > 0:
-    avg_pct = sum(h.get("f3", 0) for h in holdings) / len(holdings)
-    est_chg = avg_pct * STOCK_RATIO
-    est_nav = dwjz * (1 + est_chg / 100)
+# 加权估算
+weighted_chg = 0
+holding_details = []
+for secid, name, weight in HOLDINGS_RAW:
+    info = prices.get(secid.lstrip("01."), {})
+    chg = info.get("f3", 0)
+    contrib = weight * chg / 100  # 对基金的贡献
+    weighted_chg += contrib
+    holding_details.append((name, weight, chg, contrib))
+
+# 归一化：top10占55.66%，剩余仓位(88-55.66)=32.34%用等权估计
+remaining_ratio = STOCK_RATIO * 100 - TOTAL_WEIGHT
+if remaining_ratio > 0:
+    remaining_chg = sum(d[2] for d in holding_details) / len(holding_details)  # 平均涨跌
+    weighted_chg += remaining_chg * remaining_ratio / 100
+
+est_nav = dwjz * (1 + weighted_chg / 100)
 
 # 计算盈亏
 today_value = FUND_SHARES * est_nav
 total_pnl = today_value - TOTAL_INVEST
-pnl_pct = (est_nav / COST_NAV - 1) * 100
-
-# 今日回血
 yesterday_value = FUND_SHARES * dwjz
 today_pnl = today_value - yesterday_value
 
 # 净值变化追踪
 change_msg = ""
-prev_nav = state.get("last_nav")
-prev_date = state.get("last_date")
+prev_nav = state.get("last_nav"); prev_date = state.get("last_date")
 if prev_nav and prev_date and jzrq != prev_date:
-    nav_change = dwjz - prev_nav
-    nav_change_pct = (dwjz / prev_nav - 1) * 100
-    change_msg = f"\n📉 净值变动（{prev_date}→{jzrq}）: {nav_change:+.4f} ({nav_change_pct:+.2f}%)"
+    nc = dwjz - prev_nav; ncp = (dwjz/prev_nav-1)*100
+    change_msg = f"\n📉 净值变动: {nc:+.4f} ({ncp:+.2f}%)"
 
-# 近5日趋势
 trend_msg = ""
 if len(nav_items) >= 5:
     recent = [float(i["DWJZ"]) for i in nav_items[:5]]
-    chg5 = (recent[0] / recent[4] - 1) * 100
-    trend_msg = f"\n📊 近5日净值: {chg5:+.1f}%"
+    chg5 = (recent[0]/recent[4]-1)*100
+    trend_msg = f"\n📊 近5日: {chg5:+.1f}%"
 
-# ========== 推送 ==========
+# 推送标题
 hour, minute = now.hour, now.minute
 if hour == 11 and minute >= 30: title = "⏸️ 午间休市"
 elif hour == 13 and minute <= 5: title = "🔔 下午开盘"
@@ -136,25 +134,21 @@ elif hour >= 15: title = "📊 收盘确认"
 else: title = "📊 基金估值"
 
 msg = f"{title} — 015690 富国中小盘\n"
-msg += f"\n📅 {jzrq}  确认净值 {dwjz:.4f} ({jzzzl:+.2f}%)"
-msg += f"\n📈 今日估算 {est_nav:.4f} ({est_chg:+.2f}%)  ← 持仓加权"
-msg += f"\n📊 {FUND_SHARES:.0f}份 × 成本{COST_NAV:.4f}"
-msg += f"\n💰 市值 {today_value:,.0f}  盈亏 {total_pnl:+,.0f} ({pnl_pct:+.1f}%)"
-if today_pnl != 0:
-    msg += f"\n💹 今日回血 {today_pnl:+,.0f}"
-msg += f"\n🔁 回本需 {COST_NAV:.4f} (+{(COST_NAV/est_nav-1)*100:.1f}%)"
+msg += f"\n📅 {jzrq} 净值 {dwjz:.4f}"
+msg += f"\n📈 今日估算 {est_nav:.4f} ({weighted_chg:+.2f}%)"
+msg += f"\n💰 {FUND_SHARES:.0f}份  市值 {today_value:,.0f}"
+msg += f"\n   盈亏 {total_pnl:+,.0f}  今日 {today_pnl:+,.0f}"
+msg += f"\n🔁 回本需 {COST_NAV:.4f}"
 
 if change_msg: msg += change_msg
 if trend_msg: msg += trend_msg
 
-# 持仓明细（折叠）
-msg += f"\n\n📋 重仓股今日:"
-for h in holdings:
-    msg += f"\n   {h.get('f14','?')}: {h.get('f3',0):+.1f}%"
+# 持仓明细（按权重排序）
+msg += f"\n\n📋 重仓股（权重→贡献）:"
+for name, weight, chg, contrib in sorted(holding_details, key=lambda x: x[1], reverse=True):
+    bar = "🟢" if chg > 3 else ("🔴" if chg < -3 else "⚪")
+    msg += f"\n   {bar} {name} {weight:.1f}%  {chg:+.1f}%"
 
 send_wx(msg)
-
-# 保存状态
-state["last_nav"] = dwjz
-state["last_date"] = jzrq
+state["last_nav"] = dwjz; state["last_date"] = jzrq
 save_state(state)
