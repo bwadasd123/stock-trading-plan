@@ -92,7 +92,8 @@ jzrq = latest.get("FSRQ", "N/A")
 weighted_chg = 0
 holding_details = []
 for secid, name, weight in HOLDINGS_RAW:
-    info = prices.get(secid.lstrip("01."), {})
+    code = secid.split(".")[1]  # "0.002384" → "002384"
+    info = prices.get(code, {})
     chg = info.get("f3", 0)
     contrib = weight * chg / 100  # 对基金的贡献
     weighted_chg += contrib
