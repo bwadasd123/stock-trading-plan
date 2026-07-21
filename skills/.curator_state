@@ -1,0 +1,9 @@
+{
+  "last_report_path": "/home/jmy/.hermes/profiles/eastmoney-bot/logs/curator/20260714-045328",
+  "last_run_at": "2026-07-14T04:53:28.250367+00:00",
+  "last_run_duration_seconds": 12.32796,
+  "last_run_summary": "auto: no changes; llm: ## Curator Pass — Single Candidate\n\nOnly one agent-created skill is present: **`stock-screener-web`**. It's already a class-level umbrella covering the full A股智能筛选 Web Dashboard (Flask + MySQL stack), with heavy activity (452 uses, 556 patc…",
+  "last_run_summary_shown_at": null,
+  "paused": false,
+  "run_count": 6
+}
