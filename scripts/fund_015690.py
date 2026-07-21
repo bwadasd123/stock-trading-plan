@@ -58,7 +58,7 @@ def save_state(s):
 
 def get_holding_prices():
     secids = ",".join(s for s,_,_ in HOLDINGS_RAW)
-    url = f"http://push2delay.eastmoney.com/api/qt/ulist.np/get?fltt=2&fields=f2,f3,f14&secids={secids}"
+    url = f"http://push2delay.eastmoney.com/api/qt/ulist.np/get?fltt=2&fields=f2,f3,f12,f14&secids={secids}"
     try:
         resp = urllib.request.urlopen(url, timeout=5)
         items = json.loads(resp.read()).get("data", {}).get("diff", [])
