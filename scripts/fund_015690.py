@@ -23,9 +23,9 @@ STATE_FILE = "/home/jmy/.hermes/profiles/eastmoney-bot/.fund_state.json"
 os.environ['NO_PROXY'] = '*'
 
 # ========== 持仓配置 ==========
-TOTAL_INVEST = 15000
-FUND_SHARES = 1847.8804
-COST_NAV = 8.1174
+TOTAL_INVEST = 22500        # 累计投入（含7/17加仓）
+FUND_SHARES = 2912.9        # 份额
+COST_NAV = 7.7242           # 加权成本
 
 def send_wx(msg):
     if not WX_WEBHOOK:
