@@ -609,7 +609,7 @@ def main():
                     dist = (price_data['price'] - t['target']) / t['target'] * 100
                     emoji = "✅" if dist >= 0 else "⏳"
                     msg += f"🎯 做T卖出 {t['target']:.2f} {emoji}距{dist:+.1f}%  {t['shares']}股\n"
-                if stock.get("target_buy") and stock.get("cost"):
+                if stock.get("target_buy"):
                     tb = stock['target_buy']
                     dist_tb = (price_data['price'] - tb) / tb * 100
                     emoji = "🔔" if dist_tb <= 0 else "⏳"
