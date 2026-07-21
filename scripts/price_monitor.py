@@ -84,8 +84,8 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 10,
         "sl_pct": 3,
-        "target_buy": None,
-        "target_shares": None,
+        "target_buy": 2.90,
+        "target_shares": 2800,
         "type": "观察"
     },
     {
@@ -115,8 +115,8 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
-        "target_buy": None,
-        "target_shares": None,
+        "target_buy": 25.00,
+        "target_shares": 400,
         "type": "观察"
     },
     {
@@ -129,9 +129,9 @@ STOCKS = [
         "buy_date": None,
         "tp_pct": 15,
         "sl_pct": 8,
-        "target_buy": None,
-        "target_shares": None,
-        "type": "持仓"
+        "target_buy": 8.80,
+        "target_shares": 1200,
+        "type": "观察"
     },
 ]
 
