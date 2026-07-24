@@ -89,18 +89,17 @@ STOCKS = [
         "type": "观察"
     },
     {
-        # 2026-07-14 清仓: 1000@8.312（止损），买入8.585，亏-273（-3.18%）
+        # 2026-07-14 清仓: 1000@8.312（止损）亏-273
+        # 2026-07-22 买入8200@8.600  回本8.633(+0.4%)  止损3%=8.342  止盈10%=9.460
         "code": "1.518880",
         "name": "黄金ETF",
         "ts_code": "518880",
-        "cost": None,
-        "shares": 0,
-        "buy_date": None,
+        "cost": 8.600,
+        "shares": 8200,
+        "buy_date": "2026-07-22",
         "tp_pct": 10,
         "sl_pct": 3,  # ETF止损3%
-        "target_buy": 8.25,
-        "target_shares": 1000,
-        "type": "观察"
+        "type": "持仓"
     },
     {
         # 2026-07-08 清仓@33.22 (-854)
@@ -140,7 +139,6 @@ STATE_FILE = "/home/jmy/.hermes/profiles/eastmoney-bot/.monitor_state.json"
 # 历史累计亏损（用于计算回本价）
 LOSS_HISTORY = {
     "600114": {"loss": 2785, "name": "东睦股份"},  # 7/21 1000@28.435→清均价25.65 亏-2785
-    "518880": {"loss": 273, "name": "黄金ETF"},    # 7/14 止损-273
     "600888": {"loss": 1504, "name": "新疆众和"},  # 7/21 1200@10.297→清均价9.043 亏-1504
     "159599": {"loss": 1005, "name": "芯片ETF"},   # 7/21 2800@3.218→清2.859 亏-1005
 }
@@ -157,6 +155,20 @@ def send_wx(msg):
         urllib.request.urlopen(req, timeout=5)
     except Exception as e:
         pass
+
+def push_msg(key, price, msg, state):
+    """推送消息并追踪上次推送价格"""
+    last_prices = state.setdefault("last_prices", {})
+    last_price = last_prices.get(key)
+    
+    if last_price and last_price > 0 and price > 0:
+        since_last = (price - last_price) / last_price * 100
+        arrow = "↑" if since_last > 0 else ("↓" if since_last < 0 else "→")
+        msg += f"\n📌 距上次: {'+' if since_last>=0 else ''}{since_last:.2f}% ({last_price:.3f} {arrow} {price:.3f})"
+    
+    send_wx(msg)
+    last_prices[key] = price
+    save_state(state)
 
 def load_state():
     """加载状态文件"""
@@ -495,6 +507,36 @@ def generate_advice():
     
     return msg
 
+def _write_shared_cache():
+    """把实时数据写到共享缓存，供模拟交易系统复用（避免重复调API）"""
+    cache = {}
+    for stock in STOCKS:
+        price_data = get_price(stock["code"])
+        if not price_data:
+            continue
+        key = stock["ts_code"]
+        entry = {
+            "name": stock["name"],
+            "code": stock["code"],
+            "ts_code": stock["ts_code"],
+            "type": stock.get("type", "观察"),
+            "cost": stock.get("cost"),
+            "price": price_data["price"],
+            "change_pct": price_data["change_pct"],
+            "high": price_data.get("high", 0),
+            "low": price_data.get("low", 0),
+            "open": price_data.get("open", 0),
+            "pre_close": price_data.get("pre_close", 0),
+            "volume": price_data.get("volume", 0),
+            "target_buy": stock.get("target_buy"),
+            "target_shares": stock.get("target_shares"),
+            "timestamp": datetime.datetime.now().isoformat(),
+        }
+        cache[key] = entry
+    
+    with open("/tmp/stock_shared_cache.json", "w") as f:
+        json.dump(cache, f, ensure_ascii=False)
+
 def main():
     now = datetime.datetime.now()
     state = load_state()
@@ -507,6 +549,7 @@ def main():
             "open_sent": False,
             "close_sent": False,
             "last_hourly": None,
+            "last_prices": state.get("last_prices", {}),
             "today": today_str,
             "prev_limit_up": {},
             "prev_limit_down": {},
@@ -530,13 +573,27 @@ def main():
     if change_msg:
         send_wx(change_msg)
     
+    # ======== 共享数据缓存（供模拟交易系统复用）========
+    try:
+        _write_shared_cache()
+    except:
+        pass
+    
     # 收盘播报
     if now.hour == 15 and now.minute == 0 and not state.get("close_sent"):
         msg = f"📊 【收盘总结】\n\n"
+        last_prices = state.setdefault("last_prices", {})
         for stock in STOCKS:
             price_data = get_price(stock["code"])
             if price_data:
                 stock_msg, _, _ = format_stock(stock, price_data)
+                # 距上次推送
+                lp = last_prices.get(stock["ts_code"])
+                if lp and lp > 0:
+                    chg = (price_data["price"] - lp) / lp * 100
+                    arrow = "↑" if chg > 0 else ("↓" if chg < 0 else "→")
+                    stock_msg += f"\n📌 距上次: {'+' if chg>=0 else ''}{chg:.2f}% ({lp:.3f} {arrow} {price_data['price']:.3f})"
+                last_prices[stock["ts_code"]] = price_data["price"]
                 msg += stock_msg + "\n"
         send_wx(msg)
         state["close_sent"] = True
@@ -583,10 +640,17 @@ def main():
     # 开盘播报
     if now.hour == 9 and now.minute == 30 and not state.get("open_sent"):
         msg = f"🔔 【开盘播报】\n\n"
+        last_prices = state.setdefault("last_prices", {})
         for stock in STOCKS:
             price_data = get_price(stock["code"])
             if price_data:
                 stock_msg, _, _ = format_stock(stock, price_data)
+                lp = last_prices.get(stock["ts_code"])
+                if lp and lp > 0:
+                    chg = (price_data["price"] - lp) / lp * 100
+                    arrow = "↑" if chg > 0 else ("↓" if chg < 0 else "→")
+                    stock_msg += f"\n📌 距上次: {'+' if chg>=0 else ''}{chg:.2f}% ({lp:.3f} {arrow} {price_data['price']:.3f})"
+                last_prices[stock["ts_code"]] = price_data["price"]
                 msg += stock_msg + "\n"
         send_wx(msg)
         state["open_sent"] = True
@@ -597,10 +661,18 @@ def main():
     current_hour = now.strftime("%H:00")
     if current_hour != state.get("last_hourly") and now.minute == 0:
         msg = f"⏰ 【{current_hour} 整点播报】\n"
+        last_prices = state.setdefault("last_prices", {})
         for stock in STOCKS:
             price_data = get_price(stock['code'])
             if price_data:
                 stock_msg, _, _ = format_stock(stock, price_data)
+                # 距上次推送
+                lp = last_prices.get(stock["ts_code"])
+                if lp and lp > 0:
+                    chg = (price_data["price"] - lp) / lp * 100
+                    arrow = "↑" if chg > 0 else ("↓" if chg < 0 else "→")
+                    stock_msg += f"\n📌 距上次: {'+' if chg>=0 else ''}{chg:.2f}% ({lp:.3f} {arrow} {price_data['price']:.3f})"
+                last_prices[stock["ts_code"]] = price_data["price"]
                 msg += stock_msg
                 # 做T目标距离
                 t_targets = state.get("t_targets", {})
@@ -648,7 +720,7 @@ def main():
                 msg = f"🎯 【{stock['name']} 止盈触发！】\n"
                 msg += f"现价 {price:.3f}  |  盈利 {profit:+.0f}元\n"
                 msg += f"建议卖出！\n━━━━━━━━━━━━━━━━━━━━"
-                send_wx(msg)
+                push_msg(key, price, msg, state)
                 state["alerted"][key].append("tp")
                 save_state(state)
                 continue
@@ -658,7 +730,7 @@ def main():
                 msg = f"🚨 【{stock['name']} 止损触发！】\n"
                 msg += f"现价 {price:.3f}  |  亏损 {profit:.0f}元\n"
                 msg += f"建议清仓！\n━━━━━━━━━━━━━━━━━━━━"
-                send_wx(msg)
+                push_msg(key, price, msg, state)
                 state["alerted"][key].append("sl")
                 save_state(state)
                 continue
@@ -670,7 +742,7 @@ def main():
                 msg += f"现价 {price:.3f}  |  止损 {sl:.3f}\n"
                 msg += f"距止损仅 {dist_sl:.1f}%  |  浮亏 {profit:.0f}元\n"
                 msg += f"⚠️ 注意风险！\n━━━━━━━━━━━━━━━━━━━━"
-                send_wx(msg)
+                push_msg(key, price, msg, state)
                 state["alerted"][key].append("near_sl")
                 save_state(state)
                 continue
@@ -682,7 +754,7 @@ def main():
                 msg += f"现价 {price:.3f}  |  止盈 {tp:.3f}\n"
                 msg += f"距止盈仅 {dist_tp:.1f}%  |  浮盈 {profit:+.0f}元\n"
                 msg += f"准备减仓！\n━━━━━━━━━━━━━━━━━━━━"
-                send_wx(msg)
+                push_msg(key, price, msg, state)
                 state["alerted"][key].append("near_tp")
                 save_state(state)
                 continue
@@ -698,7 +770,7 @@ def main():
                     msg += f"现价 {price:.3f}  |  盈亏 {profit:+.0f}元\n"
                     msg += f"⚠️ 极度超买信号，回调概率极大\n"
                     msg += f"🎯 建议立即减仓！\n━━━━━━━━━━━━━━━━━━━━"
-                    send_wx(msg)
+                    push_msg(key, price, msg, state)
                     state["alerted"][key].append("rsi_overbought_90")
                     save_state(state)
                     continue
@@ -708,7 +780,7 @@ def main():
                     msg += f"RSI(14) = {rsi:.1f}\n"
                     msg += f"现价 {price:.3f}  |  盈亏 {profit:+.0f}元\n"
                     msg += f"📋 超买区域，注意回调风险\n━━━━━━━━━━━━━━━━━━━━"
-                    send_wx(msg)
+                    push_msg(key, price, msg, state)
                     state["alerted"][key].append("rsi_overbought_80")
                     save_state(state)
                     continue
@@ -717,7 +789,7 @@ def main():
                     msg += f"RSI(14) = {rsi:.1f}\n"
                     msg += f"现价 {price:.3f}\n"
                     msg += f"💡 超卖区域，可关注反弹机会\n━━━━━━━━━━━━━━━━━━━━"
-                    send_wx(msg)
+                    push_msg(key, price, msg, state)
                     state["alerted"][key].append("rsi_oversold")
                     save_state(state)
                     continue
@@ -739,12 +811,12 @@ def main():
                 profit = (price - stock["cost"]) * stock["shares"]
                 msg += f"成本涨幅 {cost_pct:+.1f}%  |  盈亏 {profit:+.0f}元\n"
             msg += f"━━━━━━━━━━━━━━━━━━━━"
-            send_wx(msg)
+            push_msg(key, price, msg, state)
         elif not is_limit_up and prev_limit_up:
             msg = f"⚠️ 【{stock['name']} 涨停打开！】\n"
             msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
             msg += f"━━━━━━━━━━━━━━━━━━━━"
-            send_wx(msg)
+            push_msg(key, price, msg, state)
         
         # 跌停状态变化
         if is_limit_down and not prev_limit_down:
@@ -755,12 +827,12 @@ def main():
                 profit = (price - stock["cost"]) * stock["shares"]
                 msg += f"成本涨幅 {cost_pct:+.1f}%  |  盈亏 {profit:+.0f}元\n"
             msg += f"━━━━━━━━━━━━━━━━━━━━"
-            send_wx(msg)
+            push_msg(key, price, msg, state)
         elif not is_limit_down and prev_limit_down:
             msg = f"⚠️ 【{stock['name']} 跌停打开！】\n"
             msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
             msg += f"━━━━━━━━━━━━━━━━━━━━"
-            send_wx(msg)
+            push_msg(key, price, msg, state)
         
         # 更新状态
         state.setdefault("prev_limit_up", {})[key] = is_limit_up
@@ -781,7 +853,7 @@ def main():
                     msg = f"{direction} 【{stock['name']} {p:+d}%】\n"
                     msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
                     msg += f"━━━━━━━━━━━━━━━━━━━━"
-                    send_wx(msg)
+                    push_msg(key, price, msg, state)
             state[prev_key] = current_pct_int
             save_state(state)
         elif prev_pct is None and -10 <= current_pct_int <= 10:
@@ -803,7 +875,7 @@ def main():
                     msg += f"现价 {price:.3f}  |  成本 {stock['cost']:.3f}\n"
                     msg += f"盈亏 {(price - stock['cost']) * stock['shares']:+.0f}元\n"
                     msg += f"━━━━━━━━━━━━━━━━━━━━"
-                    send_wx(msg)
+                    push_msg(key, price, msg, state)
                     state["alerted"][key].append(alert_key)
                     save_state(state)
         
@@ -814,7 +886,7 @@ def main():
                 msg = f"⏰ 【{stock['name']} 持仓超{MAX_HOLD_DAYS}天！】\n"
                 msg += f"现价 {price:.3f}  |  持仓 {holding_days}天\n"
                 msg += f"建议减仓或清仓\n━━━━━━━━━━━━━━━━━━━━"
-                send_wx(msg)
+                push_msg(key, price, msg, state)
                 state["alerted"][key].append("hold_days")
                 save_state(state)
         
@@ -830,7 +902,7 @@ def main():
                 msg += f"💰 现价 {price:.3f}  ≥  目标 {t_target_price:.2f}\n"
                 msg += f"📋 {t_info['note']}\n"
                 msg += f"💡 卖出旧持仓中 {t_shares} 股"
-                send_wx(msg)
+                push_msg(key, price, msg, state)
                 state["alerted"][key].append(alert_key)
                 save_state(state)
         
@@ -926,7 +998,7 @@ def main():
                         msg += f"\n💡 买入理由: {' + '.join(reasons)}，技术性反弹概率大\n"
                     
                     msg += "━━━━━━━━━━━━━━━━━━━━"
-                    send_wx(msg)
+                    push_msg(key, price, msg, state)
                     time_key = f"target_buy_{now.hour:02d}:{now.minute:02d}"
                     state.setdefault("alerted", {}).setdefault(key, []).append(time_key)
                     save_state(state)
@@ -945,7 +1017,7 @@ def main():
                     if suggested_shares > 0:
                         msg += f"建议仓位: {suggested_shares}股({suggested_shares * price:.0f}元)\n"
                     msg += f"━━━━━━━━━━━━━━━━━━━━"
-                    send_wx(msg)
+                    push_msg(key, price, msg, state)
                     state.setdefault("alerted", {}).setdefault(key, []).append("buy_recovery")
                     save_state(state)
             
@@ -959,7 +1031,7 @@ def main():
                         msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
                         msg += f"从-{max_drop}%收窄，关注反弹机会\\n"
                         msg += f"━━━━━━━━━━━━━━━━━━━━"
-                        send_wx(msg)
+                        push_msg(key, price, msg, state)
                         state.setdefault("alerted", {}).setdefault(key, []).append("buy_narrow")
                         save_state(state)
             
@@ -971,7 +1043,7 @@ def main():
                     msg += f"现价 {price:.3f}（{change_pct:+.2f}%）\n"
                     msg += f"止跌反弹，可考虑入场\n"
                     msg += f"━━━━━━━━━━━━━━━━━━━━"
-                    send_wx(msg)
+                    push_msg(key, price, msg, state)
                     state.setdefault("alerted", {}).setdefault(key, []).append("buy_turn_up")
                     save_state(state)
 
